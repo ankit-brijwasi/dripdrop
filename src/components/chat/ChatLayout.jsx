@@ -1,46 +1,50 @@
 import { useEffect, useState } from "react";
 import { Outlet } from "react-router-dom";
+import { Query } from "appwrite";
 
 import Box from "@mui/material/Box";
 
 import ChatSideBar from "./ChatSideBar";
+import { databases } from "../../appwrite/config";
+import { useAuth } from "../../hooks/useAuth";
+import { toast } from "react-toastify";
+import { getProfileFromUserId } from "../../utils/helpers";
 
 const DRAWER_WIDTH = 350;
-const demoContacts = [
-  {
-    $id: "1",
-    name: "Will Smith",
-    image:
-      "https://images.pexels.com/photos/12023151/pexels-photo-12023151.jpeg?auto=compress&cs=tinysrgb&w=260&h=260&dpr=1",
-  },
-  {
-    $id: "2",
-    name: "Jane Doe",
-    image:
-      "https://images.pexels.com/photos/16904525/pexels-photo-16904525/free-photo-of-woman-sitting-in-river.jpeg?auto=compress&cs=tinysrgb&w=260&h=260&dpr=1",
-  },
-  {
-    $id: "3",
-    name: "Settings",
-    image:
-      "https://images.pexels.com/photos/15679734/pexels-photo-15679734/free-photo-of-young-woman-lying-on-floor-in-studio-posing.jpeg?auto=compress&cs=tinysrgb&w=260&h=260&dpr=1",
-  },
-];
 
-export default function ChatLayout(props) {
+export default function ChatLayout() {
   const [open, setOpen] = useState(true);
-  const [contacts, setContacts] = useState([]);
+  const [contacts, setContacts] = useState({ connections: [] });
   const [loading, setLoading] = useState(true);
+  const [auth] = useAuth();
 
   useEffect(() => {
-    const tId = setTimeout(() => {
-      // simulate loading
-      setContacts(demoContacts);
-      setLoading(false);
-    }, 1000);
+    (async () => {
+      try {
+        let docs = await databases.listDocuments(
+          process.env.REACT_APP_DATABASE_ID,
+          process.env.REACT_APP_CONTACT_COLLECTION_ID,
+          [Query.equal("user_id", auth.user.$id)]
+        );
+        if (docs.total > 0) {
+          docs = docs.documents[0];
+          setContacts({
+            ...docs,
+            connections: await Promise.all(
+              docs.connections.filter(Boolean).map(async (connection) => {
+                const profile = await getProfileFromUserId(connection);
+                return profile;
+              })
+            ),
+          });
+        }
+      } catch (error) {
+        toast(error?.response?.message, { type: "error" });
+      }
 
-    return () => clearTimeout(tId);
-  }, []);
+      setLoading(false);
+    })();
+  }, [auth.user.$id]);
 
   return (
     <Box sx={{ display: "flex", width: "100%" }}>
@@ -48,7 +52,7 @@ export default function ChatLayout(props) {
         drawerWidth={DRAWER_WIDTH}
         open={open}
         setOpen={() => setOpen(!open)}
-        contacts={contacts}
+        contacts={contacts.connections}
         loading={loading}
       />
       <Box

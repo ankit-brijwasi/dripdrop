@@ -1,4 +1,5 @@
-// react router dom
+// react and react router dom
+import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 
 // material ui hooks
@@ -18,42 +19,55 @@ import useMediaQuery from "@mui/material/useMediaQuery";
 // material icons
 import EditNoteIcon from "@mui/icons-material/EditNote";
 
+// custom
 import { useDialog } from "../../hooks/useDialog";
+import { useNewChat } from "../../hooks/useNewChat";
 import { DialogBody, DialogHeader } from "./NewChatDialog";
+import Empty from "../Empty";
 
-// Desktop Side Links
-const Contact = ({ contacts }) => {
+
+const Contact = (props) => {
   const theme = useTheme();
+  const [contacts, setContacts] = useState(props.contacts);
   const { pathname } = useLocation();
-  const color = alpha(theme.palette.common.white, 0.15);
+  const { connection } = useNewChat();
 
+  const color = alpha(theme.palette.common.white, 0.15);
   const basePath = "/chats/";
+
+  useEffect(() => {
+    if (connection) {
+      setContacts((prevState) => [connection, ...prevState]);
+    }
+  }, [connection]);
 
   return (
     <List dense={true}>
-      {contacts.map((connection) => {
+      {contacts.length === 0 && <Empty style={{ minHeight: "90vh" }} />}
+      {contacts.map((connection, i) => {
         return (
           <ListItemButton
-            key={connection.name}
+            key={i}
             sx={{ mb: 0.6, py: 1 }}
             component={Link}
-            to={`${basePath}${connection.$id}`}
+            to={`${basePath}${connection.username}`}
             style={
-              pathname === `${basePath}${connection.$id}`
+              pathname === `${basePath}${connection.username}`
                 ? { backgroundColor: color }
                 : {}
             }
           >
             <ListItemIcon>
-              <Avatar src={connection.image} />
+              <Avatar src={connection.profile_image?.href} />
             </ListItemIcon>
-            <ListItemText primary={connection.name} />
+            <ListItemText primary={connection.username} />
           </ListItemButton>
         );
       })}
     </List>
   );
 };
+
 
 export default function ChatSideBar({
   drawerWidth,

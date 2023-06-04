@@ -7,23 +7,10 @@ import Box from "@mui/material/Box";
 import Container from "@mui/material/Container";
 
 import { useAuth } from "../hooks/useAuth";
-import { databases, storage } from "../appwrite/config";
+import { databases } from "../appwrite/config";
+import { processProfileImg } from "../utils/helpers";
 
 import Loading from "../components/Loading";
-
-
-function processProfileImg(profileImg) {
-  try {
-    return new URL(profileImg);
-  } catch (_) {
-    return storage.getFilePreview(
-      process.env.REACT_APP_PROFILE_IMAGE_BUCKET,
-      profileImg,
-      200,
-      200
-    );
-  }
-}
 
 export default function ProfileHoc(WrappedComponent) {
   function Component({ myProfile }) {
@@ -63,11 +50,7 @@ export default function ProfileHoc(WrappedComponent) {
           {loading ? (
             <Loading message={"Loading profile..."} />
           ) : (
-            <WrappedComponent
-              userId={uId}
-              me={myProfile}
-              profile={profile}
-            />
+            <WrappedComponent userId={uId} me={myProfile} profile={profile} />
           )}
         </Box>
       </Container>

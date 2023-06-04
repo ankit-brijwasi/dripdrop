@@ -7,7 +7,7 @@ import { databases, storage } from "../../appwrite/config";
 import { useRealtime } from "../../hooks/useRealtime";
 import { useAuth } from "../../hooks/useAuth";
 import Loading from "../Loading";
-import emptyBox from "../../assets/empty-box.png";
+import Empty from "../Empty";
 
 const getFilePreview = (file_id) =>
   storage.getFilePreview(
@@ -67,19 +67,7 @@ export default function Post({ fetchQuery }) {
   ) : (
     <>
       {posts.length === 0 ? (
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            flexFlow: "column",
-            height: "65vh",
-            width: "100%",
-          }}
-        >
-          <img src={emptyBox} alt="no posts yet!" />
-          Nothing to show here
-        </div>
+        <Empty style={{ minHeight: "60vh" }} />
       ) : (
         <ImageList cols={3}>
           {posts.map((post) => (
