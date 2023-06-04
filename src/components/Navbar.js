@@ -207,20 +207,7 @@ const DialogActions = ({ caption, files, handleClose }) => {
   const handleClick = async (event) => {
     setLoading(true);
     try {
-      let postData = {
-        user_id: auth?.user.$id,
-        posted_on: new Date().toISOString(),
-      };
-
-      if (caption) postData.caption = caption;
-
-      const post = await databases.createDocument(
-        process.env.REACT_APP_DATABASE_ID,
-        process.env.REACT_APP_POST_COLLECTION_ID,
-        uuid.v4(),
-        postData
-      );
-
+      let file_ids = [];
       for (let i = 0; i < files.length; i++) {
         // upload file to bucket
         let file = await storage.createFile(
@@ -228,18 +215,24 @@ const DialogActions = ({ caption, files, handleClose }) => {
           uuid.v4(),
           files[i]
         );
-
-        // create postContent
-        await databases.createDocument(
-          process.env.REACT_APP_DATABASE_ID,
-          process.env.REACT_APP_POST_CONTENT_COLLECTION_ID,
-          uuid.v4(),
-          { file_id: file.$id, post_id: post.$id }
-        );
+        file_ids.push(file.$id);
       }
 
+      let postData = {
+        user_id: auth?.user.$id,
+        posted_on: new Date().toISOString(),
+        file_ids,
+      };
+      if (caption) postData.caption = caption;
+
+      await databases.createDocument(
+        process.env.REACT_APP_DATABASE_ID,
+        process.env.REACT_APP_POST_COLLECTION_ID,
+        uuid.v4(),
+        postData
+      );
       handleClose();
-      toast("Post has been added", { type: "info" });
+      toast("Posted new update in your timeline!", { type: "info" });
     } catch (e) {
       setError(e);
     }
@@ -248,8 +241,7 @@ const DialogActions = ({ caption, files, handleClose }) => {
 
   useEffect(() => {
     if (error) {
-      console.log(error.response);
-      toast("an error occured!", { type: "error" });
+      toast(error.response.message, { type: "error" });
     }
   }, [error]);
 
