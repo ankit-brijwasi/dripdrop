@@ -1,34 +1,72 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
+import { toast } from "react-toastify";
 
 import ChatsContainer from "../components/chat/ChatsContainer";
 import SendMsg from "../components/chat/SendMsg";
+import Loading from "../components/Loading";
+
 import { useAuth } from "../hooks/useAuth";
 
-const initialState = [];
+import {
+  createOrupdateContact,
+  getMessageHistory,
+  saveMsgToCollection,
+} from "../utils/helpers";
+import { useRealtime } from "../hooks/useRealtime";
 
 export default function Chat() {
-  const [chats, setChats] = useState(initialState);
-  const [auth] = useAuth();
+  const [loading, setLoading] = useState(true);
+  const [chats, setChats] = useState([]);
   let { userId } = useParams();
+  const { message } = useRealtime();
 
-  useEffect(() => setChats([]), [userId]);
+  const [auth] = useAuth();
 
-  const handleMsg = (msg) => {
-    setChats((prevChats) => [
-      ...prevChats,
-      {
-        message: msg,
-        user: { $id: auth.user.$id, name: auth.user.name },
-        profile: { img: "https://picsum.photos/seed/picsum/200/300" },
+  useEffect(() => {
+    setLoading(true);
+    (async () => {
+      try {
+        const messages = await getMessageHistory([
+          `${auth.user.$id}.${userId}`,
+          `${userId}.${auth.user.$id}`,
+        ]);
+        setChats(messages);
+      } catch (error) {
+        toast(error?.response?.message, { type: "error" });
+      }
+    })();
+    setLoading(false);
+
+    return () => {
+      setLoading(true);
+      setChats([]);
+    };
+  }, [userId, auth.user.$id]);
+
+  useEffect(() => {
+    if (message?.sent_to.user_id === auth?.user.$id) {
+      setChats((prevState) => [...prevState, message]);
+    }
+  }, [message, auth.user.$id]);
+
+  const handleMsg = async (msg) => {
+    try {
+      await createOrupdateContact(userId, auth.user.$id);
+      const payload = await saveMsgToCollection({
+        roomId: `${auth.user.$id}.${userId}`,
+        body: msg,
         sent_on: new Date(),
-      },
-    ]);
-    // TODO: send the message to server,
-    // user.$id of the user whose chat is right now opened(can be taken using the URL)
+      });
+      setChats((prevState) => [...prevState, payload]);
+    } catch (error) {
+      toast(error?.response?.message, { type: "error" });
+    }
   };
 
-  return (
+  return loading ? (
+    <Loading message={"loading chats..."} />
+  ) : (
     <>
       <ChatsContainer chats={chats} />
       <SendMsg sendMsg={handleMsg} />

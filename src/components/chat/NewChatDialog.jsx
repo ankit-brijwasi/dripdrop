@@ -145,7 +145,7 @@ export const DialogBody = () => {
                 <ListItemButton
                   onClick={(event) => handleClick(user)}
                   component={Link}
-                  to={`/chats/${user.username}`}
+                  to={`/chats/${user.user_id}`}
                 >
                   <ListItemAvatar sx={{ marginRight: -0.5 }}>
                     <Avatar

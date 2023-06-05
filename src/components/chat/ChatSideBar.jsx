@@ -37,7 +37,7 @@ const Contact = (props) => {
   useEffect(() => {
     if (connection) {
       setContacts((prevState) => {
-        if (!prevState.find(prev => prev.user_id === connection.user_id)) {
+        if (!prevState.find((prev) => prev.user_id === connection.user_id)) {
           return [connection, ...prevState];
         }
         return prevState;
@@ -54,9 +54,9 @@ const Contact = (props) => {
             key={i}
             sx={{ mb: 0.6, py: 1 }}
             component={Link}
-            to={`${basePath}${connection.username}`}
+            to={`${basePath}${connection.user_id}`}
             style={
-              pathname === `${basePath}${connection.username}`
+              pathname === `${basePath}${connection.user_id}`
                 ? { backgroundColor: color }
                 : {}
             }

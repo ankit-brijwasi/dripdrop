@@ -11,7 +11,7 @@ import ListItemAvatar from "@mui/material/ListItemAvatar";
 import ListItemText from "@mui/material/ListItemText";
 import Typography from "@mui/material/Typography";
 
-// ChatsContainer: All the chats between two persons are displayed here
+// ChatsContainer: All the chats are displayed here
 function ChatsContainer({ chats }) {
   const elRef = useRef(null);
 
@@ -47,20 +47,15 @@ function ChatsContainer({ chats }) {
             <ListItem alignItems="flex-start">
               <ListItemAvatar>
                 <Avatar
-                  alt={chat.user.name}
-                  src={chat.profile.img}
+                  alt={chat.sent_by.username}
+                  src={chat.sent_by.profile_image.href}
                   style={{ backgroundColor: "#d2d2d2" }}
                 />
               </ListItemAvatar>
               <ListItemText
                 primary={
-                  <strong
-                    style={{
-                      color: "rgb(225, 225, 225)",
-                      textTransform: "capitalize",
-                    }}
-                  >
-                    {chat.user.name}
+                  <strong style={{ color: "rgb(225, 225, 225)" }}>
+                    {chat.sent_by.username}
                   </strong>
                 }
                 secondary={
@@ -70,7 +65,7 @@ function ChatsContainer({ chats }) {
                       variant="body1"
                       color={"rgb(215, 215, 215)"}
                     >
-                      {chat.message}
+                      {chat.body}
                     </Typography>
                     <br />
                     <span style={{ fontSize: "10px" }}>

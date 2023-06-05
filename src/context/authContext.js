@@ -6,6 +6,7 @@ import { toast } from "react-toastify";
 
 // custom modules
 import { account } from "../appwrite/config";
+import { getProfileFromUserId } from "../utils/helpers";
 
 export const AuthContext = createContext();
 
@@ -66,7 +67,9 @@ export function AuthProvider({ children }) {
     (async () => {
       try {
         const user = await account.get();
-        dispatch({ type: "signin", user, error: null });
+        const profile = await getProfileFromUserId(user.$id);
+
+        dispatch({ type: "signin", user: { ...user, profile }, error: null });
       } catch (error) {
         toast(error?.response?.message, { type: "error" });
         dispatch({ type: "signout" });

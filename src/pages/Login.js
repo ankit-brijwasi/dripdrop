@@ -17,6 +17,7 @@ import { toast } from "react-toastify";
 import { account } from "../appwrite/config";
 import { useAuth } from "../hooks/useAuth";
 import Link from "../components/Link";
+import { getProfileFromUserId } from "../utils/helpers";
 
 function Login(params) {
   const [email, setEmail] = useState("temp@user.com");
@@ -36,7 +37,8 @@ function Login(params) {
     try {
       await account.createEmailSession(email, password);
       const user = await account.get();
-      dispatch({ type: "signin", user, error: null });
+      const profile = await getProfileFromUserId(user.$id);
+      dispatch({ type: "signin", user: { ...user, profile }, error: null });
     } catch (error) {
       if (error.code >= 400) toast(error.response.message, { type: "error" });
     }

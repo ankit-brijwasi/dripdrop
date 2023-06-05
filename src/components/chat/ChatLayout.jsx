@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
 import { Outlet } from "react-router-dom";
+import { toast } from "react-toastify";
 
 import Box from "@mui/material/Box";
 
 import ChatSideBar from "./ChatSideBar";
 import { useAuth } from "../../hooks/useAuth";
-import { toast } from "react-toastify";
+import { useRealtime } from "../../hooks/useRealtime";
+import { useNewChat } from "../../hooks/useNewChat";
 import { getContactFromUserId } from "../../utils/helpers";
 
 const DRAWER_WIDTH = 350;
@@ -14,7 +16,10 @@ export default function ChatLayout() {
   const [open, setOpen] = useState(true);
   const [contacts, setContacts] = useState({ connections: [] });
   const [loading, setLoading] = useState(true);
+
   const [auth] = useAuth();
+  const { message } = useRealtime();
+  const { handleConnection } = useNewChat();
 
   useEffect(() => {
     (async () => {
@@ -33,6 +38,10 @@ export default function ChatLayout() {
       setLoading(false);
     })();
   }, [auth.user.$id]);
+
+  useEffect(() => {
+    if (message) handleConnection(message.sent_by, auth.user);
+  }, [message, auth.user]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <Box sx={{ display: "flex", width: "100%" }}>
