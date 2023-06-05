@@ -1,14 +1,12 @@
 import { useEffect, useState } from "react";
 import { Outlet } from "react-router-dom";
-import { Query } from "appwrite";
 
 import Box from "@mui/material/Box";
 
 import ChatSideBar from "./ChatSideBar";
-import { databases } from "../../appwrite/config";
 import { useAuth } from "../../hooks/useAuth";
 import { toast } from "react-toastify";
-import { getProfileFromUserId } from "../../utils/helpers";
+import { getContactFromUserId } from "../../utils/helpers";
 
 const DRAWER_WIDTH = 350;
 
@@ -21,25 +19,15 @@ export default function ChatLayout() {
   useEffect(() => {
     (async () => {
       try {
-        let docs = await databases.listDocuments(
-          process.env.REACT_APP_DATABASE_ID,
-          process.env.REACT_APP_CONTACT_COLLECTION_ID,
-          [Query.equal("user_id", auth.user.$id)]
-        );
-        if (docs.total > 0) {
-          docs = docs.documents[0];
-          setContacts({
-            ...docs,
-            connections: await Promise.all(
-              docs.connections.filter(Boolean).map(async (connection) => {
-                const profile = await getProfileFromUserId(connection);
-                return profile;
-              })
-            ),
-          });
-        }
+        const contact = await getContactFromUserId(auth.user.$id, true);
+        if (contact) setContacts(contact);
       } catch (error) {
-        toast(error?.response?.message, { type: "error" });
+        let message = error?.response
+          ? error?.response?.message
+          : "Some error occured";
+
+        toast(message, { type: "error" });
+        if (message === "Some error occured") console.log(error);
       }
 
       setLoading(false);

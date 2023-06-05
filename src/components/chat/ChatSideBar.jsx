@@ -25,7 +25,6 @@ import { useNewChat } from "../../hooks/useNewChat";
 import { DialogBody, DialogHeader } from "./NewChatDialog";
 import Empty from "../Empty";
 
-
 const Contact = (props) => {
   const theme = useTheme();
   const [contacts, setContacts] = useState(props.contacts);
@@ -37,7 +36,12 @@ const Contact = (props) => {
 
   useEffect(() => {
     if (connection) {
-      setContacts((prevState) => [connection, ...prevState]);
+      setContacts((prevState) => {
+        if (!prevState.find(prev => prev.user_id === connection.user_id)) {
+          return [connection, ...prevState];
+        }
+        return prevState;
+      });
     }
   }, [connection]);
 
@@ -67,7 +71,6 @@ const Contact = (props) => {
     </List>
   );
 };
-
 
 export default function ChatSideBar({
   drawerWidth,

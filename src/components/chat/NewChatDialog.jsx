@@ -17,12 +17,12 @@ import Typography from "@mui/material/Typography";
 
 import CloseIcon from "@mui/icons-material/Close";
 
+import { useAuth } from "../../hooks/useAuth";
 import { useDialog } from "../../hooks/useDialog";
 import Loading from "../Loading";
 import { databases } from "../../appwrite/config";
 import { processProfileImg } from "../../utils/helpers";
 import { useNewChat } from "../../hooks/useNewChat";
-
 
 export const DialogHeader = () => {
   const { closeDialog } = useDialog();
@@ -62,6 +62,7 @@ export const DialogBody = () => {
   const [users, setUsers] = useState([]);
   const inputEl = useRef();
 
+  const [auth] = useAuth();
   const { handleConnection } = useNewChat();
 
   const { closeDialog } = useDialog();
@@ -108,12 +109,16 @@ export const DialogBody = () => {
     return () => clearTimeout(timeoutId);
   }, [search]);
 
-  const handleClick = async (user) => {
+  const handleClick = async (connection) => {
     closeDialog();
-    handleConnection({
-      username: user.username,
-      profile_image: user.profile_image,
-    });
+    handleConnection(
+      {
+        username: connection.username,
+        profile_image: connection.profile_image,
+        user_id: connection.user_id,
+      },
+      auth.user
+    );
   };
 
   return (
@@ -138,7 +143,7 @@ export const DialogBody = () => {
             users.map((user, i) => (
               <ListItem key={i} disablePadding>
                 <ListItemButton
-                  onClick={event => handleClick(user)}
+                  onClick={(event) => handleClick(user)}
                   component={Link}
                   to={`/chats/${user.username}`}
                 >

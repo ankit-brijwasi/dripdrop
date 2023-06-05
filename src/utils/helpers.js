@@ -34,3 +34,30 @@ export async function getProfileFromUserId(userId) {
   // this should ideally never happen
   return {};
 }
+
+export async function getContactFromUserId(userId, processConnections = false) {
+  const docs = await databases.listDocuments(
+    process.env.REACT_APP_DATABASE_ID,
+    process.env.REACT_APP_CONTACT_COLLECTION_ID,
+    [Query.equal("user_id", userId)]
+  );
+
+  if (docs.total > 0) {
+    const contact = docs.documents[0];
+    if (!processConnections)
+      return { ...contact, connections: contact.connections.filter(Boolean).reverse() };
+
+    return {
+      ...contact,
+      connections: await Promise.all(
+        contact.connections
+          .filter(Boolean)
+          .map(async (connection) => await getProfileFromUserId(connection))
+          .reverse()
+      ),
+    };
+  }
+
+  // this should ideally never happen
+  return null;
+}
