@@ -24,9 +24,6 @@ import Post from "../components/Post";
 import SuggestedAccount from "../components/home/SuggestedAccount";
 import * as popups from "../components/home/Popups";
 
-const profilePic =
-  "https://images.pexels.com/photos/16564742/pexels-photo-16564742/free-photo-of-fashion-man-people-woman.jpeg?auto=compress&cs=tinysrgb&w=255&h=255&dpr=1";
-
 const suggestedAccounts = [
   {
     id: 1,
@@ -131,7 +128,12 @@ export default function Home() {
             />
           ))}
         </Grid>
-        <Grid item xs={12} sm={4} sx={{ position: "fixed", right: 0, width: "100%" }}>
+        <Grid
+          item
+          xs={12}
+          sm={4}
+          sx={{ position: "fixed", right: 0, width: "100%" }}
+        >
           <Box sx={{ width: "70%", marginRight: "auto" }}>
             <List>
               <ListItem
@@ -167,7 +169,7 @@ export default function Home() {
                         objectFit: "contain",
                         border: "1px solid #555",
                       }}
-                      src={profilePic}
+                      src={auth?.user?.profile.profile_image.href}
                     />
                   </ListItemAvatar>
                   <ListItemText

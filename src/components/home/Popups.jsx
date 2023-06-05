@@ -1,4 +1,6 @@
-import { Fragment, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
+import { toast } from "react-toastify";
+import { v4 } from "uuid";
 
 import Avatar from "@mui/material/Avatar";
 import Button from "@mui/material/Button";
@@ -19,6 +21,10 @@ import SendIcon from "@mui/icons-material/Send";
 import CloseIcon from "@mui/icons-material/Close";
 
 import { useDialog } from "../../hooks/useDialog";
+import { useAuth } from "../../hooks/useAuth";
+
+import { databases, storage } from "../../appwrite/config";
+import { processProfileImg } from "../../utils/helpers";
 
 export const DialogHeader = () => {
   return (
@@ -37,6 +43,45 @@ export const DialogBody = () => {
 };
 
 export const DialogActions = ({ file, handleClose }) => {
+  const [auth, dispatch] = useAuth();
+  const [saving, setSaving] = useState(false);
+
+  const handleSave = async (file) => {
+    setSaving(true);
+    let storageObj = await storage.createFile(
+      process.env.REACT_APP_PROFILE_IMAGE_BUCKET,
+      v4(),
+      file
+    );
+
+    let updated_data = await databases.updateDocument(
+      process.env.REACT_APP_DATABASE_ID,
+      process.env.REACT_APP_PROFILE_COLLECTION_ID,
+      auth?.user.profile.$id,
+      {
+        profile_image: storageObj.$id,
+      }
+    );
+
+    handleClose();
+    toast("Profile picture updated", { type: "info" });
+    setSaving(false);
+    dispatch({
+      type: "update",
+      user: {
+        ...auth.user,
+        profile: {
+          ...updated_data,
+          profile_image: processProfileImg(updated_data.profile_image),
+        },
+      },
+    });
+  };
+
+  useEffect(() => {
+    return () => setSaving(false);
+  }, []);
+
   return (
     <>
       <Button
@@ -48,11 +93,12 @@ export const DialogActions = ({ file, handleClose }) => {
         Cancel
       </Button>
       <Button
-        onClick={() => console.log("upload the file", file)}
+        onClick={() => handleSave(file)}
+        disabled={saving}
         size="small"
         variant="contained"
       >
-        Save
+        {saving ? "Saving..." : "Save"}
       </Button>
     </>
   );

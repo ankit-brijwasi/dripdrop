@@ -255,7 +255,12 @@ const DialogActions = ({ caption, files, handleClose }) => {
       >
         Cancel
       </Button>
-      <Button onClick={handleClick} size="small" variant="contained">
+      <Button
+        onClick={handleClick}
+        disabled={loading}
+        size="small"
+        variant="contained"
+      >
         {loading ? "Posting..." : "Post"}
       </Button>
     </>
