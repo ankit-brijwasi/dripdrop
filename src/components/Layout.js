@@ -1,5 +1,4 @@
 // react and react router dom modules
-import { useState } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
 
 // material ui modules
@@ -9,19 +8,21 @@ import Box from "@mui/material/Box";
 import { RealtimeProvider } from "../context/realtimeContext";
 import Navbar from "./Navbar";
 import { useAuth } from "../hooks/useAuth";
+import { useEffect } from "react";
 
 // Layout Component: Defines the structure of the application
 function Layout() {
   const navigate = useNavigate();
-  const [open, setOpen] = useState(true);
   const [auth] = useAuth();
 
-  if (!auth.authenticated) return navigate("/accounts/signin");
-  
+  useEffect(() => {
+    if (!auth.authenticated) return navigate("/accounts/signin");
+  }, [auth.authenticated, navigate]);
+
   return (
     <RealtimeProvider>
       <Box sx={{ display: "flex" }}>
-        <Navbar handleDrawerToggle={() => setOpen(!open)} />
+        <Navbar />
         <Outlet />
       </Box>
     </RealtimeProvider>

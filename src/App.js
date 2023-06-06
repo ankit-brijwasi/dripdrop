@@ -53,7 +53,6 @@ function App() {
                     element={<Profile myProfile={true} />}
                   />
                   <Route path="/settings" element={<Setting />} />
-
                   <Route path="/chats" element={<ChatLayout />}>
                     <Route index element={<ChatIndex />} />
                     <Route path=":userId" element={<Chat />} />

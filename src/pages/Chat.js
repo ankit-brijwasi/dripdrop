@@ -26,14 +26,16 @@ export default function Chat() {
   useEffect(() => {
     setLoading(true);
     (async () => {
-      try {
-        const messages = await getMessageHistory([
-          `${auth.user.$id}.${userId}`,
-          `${userId}.${auth.user.$id}`,
-        ]);
-        setChats(messages);
-      } catch (error) {
-        toast(error?.response?.message, { type: "error" });
+      if (auth?.user) {
+        try {
+          const messages = await getMessageHistory([
+            `${auth.user.$id}.${userId}`,
+            `${userId}.${auth.user.$id}`,
+          ]);
+          setChats(messages);
+        } catch (error) {
+          toast(error?.response?.message, { type: "error" });
+        }
       }
     })();
     setLoading(false);
@@ -42,13 +44,13 @@ export default function Chat() {
       setLoading(true);
       setChats([]);
     };
-  }, [userId, auth.user.$id]);
+  }, [userId, auth]);
 
   useEffect(() => {
-    if (message?.sent_to.user_id === auth?.user.$id) {
+    if (message?.sent_to?.user_id === auth?.user?.$id) {
       setChats((prevState) => [...prevState, message]);
     }
-  }, [message, auth.user.$id]);
+  }, [message, auth]);
 
   const handleMsg = async (msg) => {
     try {

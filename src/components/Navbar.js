@@ -27,7 +27,6 @@ import Tooltip from "@mui/material/Tooltip";
 import { styled, alpha } from "@mui/material/styles";
 
 // material ui icons
-import MenuIcon from "@mui/icons-material/Menu";
 import SearchIcon from "@mui/icons-material/Search";
 import ImageIcon from "@mui/icons-material/Image";
 import VideoFileIcon from "@mui/icons-material/VideoFile";
@@ -39,7 +38,7 @@ import AddBoxIcon from "@mui/icons-material/AddBox";
 import ChatIcon from "@mui/icons-material/Chat";
 
 // custom modules
-import { databases, storage } from "../appwrite/config";
+import { account, databases, storage } from "../appwrite/config";
 import { useDialog } from "../hooks/useDialog";
 import { useAuth } from "../hooks/useAuth";
 import Carousel from "./Carousel";
@@ -268,12 +267,13 @@ const DialogActions = ({ caption, files, handleClose }) => {
 };
 
 // NavBar Component: Navbar for the application
-export default function NavBar({ handleDrawerToggle }) {
+export default function NavBar(props) {
   const [openSearch, setOpenSearch] = useState(false);
   const [keyword, setKeyword] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [files, setFiles] = useState([]);
 
+  const auth = useAuth();
   const { openDialog, closeDialog } = useDialog();
   const inputEl = useRef();
 
@@ -294,6 +294,20 @@ export default function NavBar({ handleDrawerToggle }) {
     closeDialog();
     setFiles([]);
     if (inputEl) inputEl.current.value = "";
+  };
+
+  const handleLogout = async (event) => {
+    auth[1]({ type: "signout" });
+    try {
+      await account.deleteSession("current");
+    } catch (error) {
+      if (error?.response?.text)
+        toast(error?.response?.text, { type: "error" });
+      else {
+        console.log(error);
+        toast("some error occured", { type: "error" });
+      }
+    }
   };
 
   useEffect(() => {
@@ -332,22 +346,6 @@ export default function NavBar({ handleDrawerToggle }) {
             },
           })}
         >
-          {false && (
-            <IconButton
-              color="inherit"
-              aria-label="open sidebar"
-              edge="start"
-              onClick={handleDrawerToggle}
-              sx={{
-                mr: 2,
-                mt: 0.5,
-                pt: { xs: 0, lg: 1.5 },
-                display: { lg: "none" },
-              }}
-            >
-              <MenuIcon />
-            </IconButton>
-          )}
           <div
             style={{
               display: "flex",
@@ -433,7 +431,11 @@ export default function NavBar({ handleDrawerToggle }) {
             </IconButton>
           </Tooltip>
           <Tooltip title="Log out">
-            <IconButton color="inherit" sx={{ marginRight: 1 }}>
+            <IconButton
+              onClick={handleLogout}
+              color="inherit"
+              sx={{ marginRight: 1 }}
+            >
               <PowerSettingsNewIcon />
             </IconButton>
           </Tooltip>

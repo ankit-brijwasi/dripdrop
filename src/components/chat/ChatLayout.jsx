@@ -23,25 +23,27 @@ export default function ChatLayout() {
 
   useEffect(() => {
     (async () => {
-      try {
-        const contact = await getContactFromUserId(auth.user.$id, true);
-        if (contact) setContacts(contact);
-      } catch (error) {
-        let message = error?.response
-          ? error?.response?.message
-          : "Some error occured";
+      if (auth?.user) {
+        try {
+          const contact = await getContactFromUserId(auth.user.$id, true);
+          if (contact) setContacts(contact);
+        } catch (error) {
+          let message = error?.response
+            ? error?.response?.message
+            : "Some error occured";
 
-        toast(message, { type: "error" });
-        if (message === "Some error occured") console.log(error);
+          toast(message, { type: "error" });
+          if (message === "Some error occured") console.log(error);
+        }
+
+        setLoading(false);
       }
-
-      setLoading(false);
     })();
-  }, [auth.user.$id]);
+  }, [auth]);
 
   useEffect(() => {
-    if (message) handleConnection(message.sent_by, auth.user);
-  }, [message, auth.user]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (auth.user && message) handleConnection(message.sent_by, auth.user);
+  }, [message, auth, handleConnection]);
 
   return (
     <Box sx={{ display: "flex", width: "100%" }}>
