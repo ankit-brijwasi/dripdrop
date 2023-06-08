@@ -203,12 +203,7 @@ function Profile({ userId, profile, me }) {
           <Post fetchQuery={[Query.equal("user_id", userId)]} />
         </TabPanel>
         <TabPanel value={value} index={1}>
-          <Post
-            fetchQuery={[
-              Query.equal("user_id", userId),
-              Query.search("saved_by", userId),
-            ]}
-          />
+          <Post fetchQuery={[Query.search("saved_by", userId)]} />
         </TabPanel>
       </Box>
     </>
