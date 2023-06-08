@@ -1,6 +1,6 @@
+import { ID } from "appwrite";
 import { Fragment, useEffect, useState } from "react";
 import { toast } from "react-toastify";
-import { v4 } from "uuid";
 
 import Avatar from "@mui/material/Avatar";
 import Button from "@mui/material/Button";
@@ -50,7 +50,7 @@ export const DialogActions = ({ file, handleClose }) => {
     setSaving(true);
     let storageObj = await storage.createFile(
       process.env.REACT_APP_PROFILE_IMAGE_BUCKET,
-      v4(),
+      ID.unique(),
       file
     );
 

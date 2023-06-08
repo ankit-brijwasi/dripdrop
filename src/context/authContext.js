@@ -24,6 +24,7 @@ function signInUser(user) {
 
 function signOutUser() {
   localStorage.removeItem("user");
+  localStorage.removeItem("jwt");
   return null;
 }
 

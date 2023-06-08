@@ -1,5 +1,7 @@
+import axios from "axios";
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
+import { toast } from "react-toastify";
 
 import Avatar from "@mui/material/Avatar";
 import Box from "@mui/material/Box";
@@ -19,10 +21,18 @@ import PhotoCameraIcon from "@mui/icons-material/PhotoCamera";
 
 import { useAuth } from "../hooks/useAuth";
 import { useDialog } from "../hooks/useDialog";
+import useScrollLoader from "../hooks/useScrollbar";
 
+import Loading from "../components/Loading";
 import Post from "../components/Post";
 import SuggestedAccount from "../components/home/SuggestedAccount";
 import * as popups from "../components/home/Popups";
+
+import {
+  getJwtToken,
+  getProfileFromUserId,
+  processPostFile,
+} from "../utils/helpers";
 
 const suggestedAccounts = [
   {
@@ -52,13 +62,78 @@ const suggestedAccounts = [
   },
 ];
 
-// TODO: Wrap home in AuthHOC
+async function fetchPosts(limit, offset) {
+  try {
+    const response = await axios.get(
+      process.env.REACT_APP_RECOMMENDATION_SERVER_URL + "/recommend/posts/",
+      {
+        headers: { "access-token": await getJwtToken() },
+        params: { limit, offset },
+      }
+    );
+    const docs = await Promise.all(
+      response.data.documents.map(async (document) => {
+        return {
+          ...document,
+          profile: await getProfileFromUserId(document.user_id),
+          files: document.file_ids.map((file_id) => ({
+            id: file_id,
+            file: processPostFile(file_id),
+          })),
+          liked_by: document.liked_by.filter(Boolean),
+          comments: document.comments.filter(Boolean),
+        };
+      })
+    );
+    return { docs, total: response.data.total };
+  } catch (error) {
+    if (!error?.response?.text) {
+      toast(error?.message, { type: "error" });
+      console.log(error);
+    }
+    toast(error?.response?.text, { type: "error" });
+    return [];
+  }
+}
+
+let offset = 0;
 export default function Home() {
+  const [file, setFile] = useState(null);
+  const [posts, setPosts] = useState([]);
+  const [totalPosts, setTotalPosts] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [fetching, setFetching] = useState(0);
+  const inputEl = useRef(null);
+
   const theme = useTheme();
+
   const [auth] = useAuth();
   const { openDialog, closeDialog } = useDialog();
-  const inputEl = useRef(null);
-  const [file, setFile] = useState(null);
+
+  useEffect(() => {
+    (async () => {
+      const { docs, total } = await fetchPosts(10, 0);
+      if (docs && total) {
+        setPosts(docs);
+        setTotalPosts(total);
+      }
+      setLoading(false);
+    })();
+  }, []);
+
+  useScrollLoader(() => {
+    setFetching(1);
+    offset += 10;
+
+    if (offset < totalPosts) {
+      fetchPosts(10, offset).then(({ docs }) => {
+        setPosts((prevPosts) => [...prevPosts, ...docs]);
+        setFetching(0);
+      });
+    } else {
+      setFetching(3);
+    }
+  });
 
   const changeProfilePicDialog = (event) => {
     event.preventDefault();
@@ -115,18 +190,62 @@ export default function Home() {
     <Box sx={{ mt: 10, mx: 8, width: "100%" }}>
       <Grid container spacing={2}>
         <Grid item xs={12} sm={8}>
-          {[1, 2, 3].map((post) => (
-            <Post
-              key={post}
-              style={{
+          {loading ? (
+            <Loading />
+          ) : (
+            posts.map((post) => (
+              <div key={post.$id}>
+                <Post
+                  style={{
+                    [theme.breakpoints.up("sm")]: {
+                      marginRight: 10,
+                      marginLeft: "auto",
+                    },
+                  }}
+                  post={post}
+                  openComments={handleOpenComments}
+                />
+              </div>
+            ))
+          )}
+          {fetching === 1 && (
+            <Box
+              sx={{
+                width: "600px",
+                mb: 2,
                 [theme.breakpoints.up("sm")]: {
                   marginRight: 10,
                   marginLeft: "auto",
                 },
+                textAlign: "center",
+                fontStyle: "italic",
+                fontWeight: "bold",
+                fontFamily: "calibri",
+                color: "rgb(180, 180, 180)",
               }}
-              openComments={handleOpenComments}
-            />
-          ))}
+            >
+              Fetching new posts...
+            </Box>
+          )}
+          {fetching === 3 && (
+            <Box
+              sx={{
+                width: "600px",
+                mb: 2,
+                [theme.breakpoints.up("sm")]: {
+                  marginRight: 10,
+                  marginLeft: "auto",
+                },
+                textAlign: "center",
+                fontStyle: "italic",
+                fontWeight: "bold",
+                fontFamily: "calibri",
+                color: "rgb(180, 180, 180)",
+              }}
+            >
+              You are all caught up!
+            </Box>
+          )}
         </Grid>
         <Grid
           item

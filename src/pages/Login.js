@@ -20,8 +20,8 @@ import Link from "../components/Link";
 import { getProfileFromUserId } from "../utils/helpers";
 
 function Login(params) {
-  const [email, setEmail] = useState("temp@user.com");
-  const [password, setPassword] = useState("AnkitB4@");
+  const [email, setEmail] = useState("user1@dripdrop.com");
+  const [password, setPassword] = useState("TestUser123");
   const [loading, setLoading] = useState(false);
 
   const navigate = useNavigate();

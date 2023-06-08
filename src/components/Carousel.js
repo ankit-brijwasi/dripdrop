@@ -1,4 +1,5 @@
 import { useState } from "react";
+import PropTypes from "prop-types";
 
 import IconButton from "@mui/material/IconButton";
 
@@ -8,7 +9,7 @@ import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
 import AliceCarousel from "react-alice-carousel";
 import "react-alice-carousel/lib/alice-carousel.css";
 
-export default function Carousel({ items }) {
+export default function Carousel({ items, disableDotsControls }) {
   const [activeIndex, setActiveIndex] = useState(0);
 
   const slidePrev = () => setActiveIndex(activeIndex - 1);
@@ -22,6 +23,7 @@ export default function Carousel({ items }) {
         responsive={{
           0: { items: 1 },
         }}
+        disableDotsControls={disableDotsControls}
         disableButtonsControls
         activeIndex={activeIndex}
         onSlideChanged={syncActiveIndex}
@@ -45,3 +47,13 @@ export default function Carousel({ items }) {
     </>
   );
 }
+
+Carousel.propTypes = {
+  items: PropTypes.array,
+  disableDotsControls: PropTypes.bool,
+};
+
+Carousel.defaultProps = {
+  disableDotsControls: false,
+  items: [],
+};

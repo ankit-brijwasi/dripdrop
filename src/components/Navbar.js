@@ -1,8 +1,8 @@
 // react, react router dom and others
+import { ID } from "appwrite"
 import { useEffect, useState, Fragment, useRef } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "react-toastify";
-import * as uuid from "uuid";
 
 // material ui modules
 import AppBar from "@mui/material/AppBar";
@@ -211,7 +211,7 @@ const DialogActions = ({ caption, files, handleClose }) => {
         // upload file to bucket
         let file = await storage.createFile(
           process.env.REACT_APP_USER_DATA_BUCKET,
-          uuid.v4(),
+          ID.unique(),
           files[i]
         );
         file_ids.push(file.$id);
@@ -219,7 +219,7 @@ const DialogActions = ({ caption, files, handleClose }) => {
 
       let postData = {
         user_id: auth?.user.$id,
-        posted_on: new Date().toISOString(),
+        posted_on: new Date().toISOString().replace("Z", "+00:00"),
         file_ids,
       };
       if (caption) postData.caption = caption;
@@ -227,7 +227,7 @@ const DialogActions = ({ caption, files, handleClose }) => {
       await databases.createDocument(
         process.env.REACT_APP_DATABASE_ID,
         process.env.REACT_APP_POST_COLLECTION_ID,
-        uuid.v4(),
+        ID.unique(),
         postData
       );
       handleClose();

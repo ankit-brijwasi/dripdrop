@@ -49,7 +49,7 @@ export default function Post({ fetchQuery }) {
 
   // handle async posts
   useEffect(() => {
-    if (post.user_id === auth.user.$id) {
+    if (post.user_id === auth?.user?.$id) {
       setPosts((prevState) => {
         if (prevState.find((prevPost) => prevPost.$id === post.$id))
           return prevState;
@@ -60,7 +60,7 @@ export default function Post({ fetchQuery }) {
         return [{ ...post, preview }, ...prevState];
       });
     }
-  }, [post, auth.user.$id]);
+  }, [post, auth?.user?.$id]);
 
   return loading ? (
     <Loading style={{ minHeight: "65vh" }} />

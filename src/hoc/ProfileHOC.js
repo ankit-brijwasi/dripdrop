@@ -19,7 +19,7 @@ export default function ProfileHoc(WrappedComponent) {
     const { userId } = useParams();
     const [auth] = useAuth();
 
-    const uId = userId ? userId : auth.user.$id;
+    const uId = userId ? userId : auth?.user?.$id;
 
     // fetch profile
     useEffect(() => {
