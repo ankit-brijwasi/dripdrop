@@ -33,34 +33,8 @@ import {
   getProfileFromUserId,
   processPostFile,
 } from "../utils/helpers";
-
-const suggestedAccounts = [
-  {
-    id: 1,
-    name: "Navdeep Mishra",
-    profile_img: "https://picsum.photos/id/35/200/300",
-  },
-  {
-    id: 2,
-    name: "Rajesh Joshi",
-    profile_img: "https://picsum.photos/id/32/200/300",
-  },
-  {
-    id: 3,
-    name: "Harshita Arya",
-    profile_img: "https://picsum.photos/id/33/200/300",
-  },
-  {
-    id: 4,
-    name: "Amiya Patanaik",
-    profile_img: "https://picsum.photos/id/34/200/300",
-  },
-  {
-    id: 5,
-    name: "Kishan",
-    profile_img: "https://picsum.photos/id/36/200/300",
-  },
-];
+import { processProfileImg } from "../utils/helpers";
+import useComment from "../hooks/useComment";
 
 async function fetchPosts(limit, offset) {
   try {
@@ -96,18 +70,54 @@ async function fetchPosts(limit, offset) {
   }
 }
 
+async function fetchSuggestedAccounts() {
+  try {
+    const response = await axios.get(
+      process.env.REACT_APP_RECOMMENDATION_SERVER_URL + "/recommend/accounts/",
+      {
+        headers: { "access-token": await getJwtToken() },
+      }
+    );
+    const docs = await Promise.all(
+      response.data.documents.map(async (document) => {
+        return {
+          ...document,
+          profile_image: await processProfileImg(document.profile_image),
+          following: document.following.filter(Boolean),
+          followers: document.followers.filter(Boolean),
+        };
+      })
+    );
+    return { docs, total: response.data.total };
+  } catch (error) {
+    if (!error?.response?.text) {
+      toast(error?.message, { type: "error" });
+      console.log(error);
+    }
+    toast(error?.response?.text, { type: "error" });
+    return [];
+  }
+}
+
 let offset = 0;
+let initialState = {
+  accounts: [],
+  loading: true,
+};
+
 export default function Home() {
   const [file, setFile] = useState(null);
   const [posts, setPosts] = useState([]);
-  const [totalPosts, setTotalPosts] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [totalPosts, setTotalPosts] = useState(0);
   const [fetching, setFetching] = useState(0);
+  const [suggestedAccounts, setSuggestedAccounts] = useState(initialState);
   const inputEl = useRef(null);
 
   const theme = useTheme();
 
   const [auth] = useAuth();
+  const { addComment } = useComment();
   const { openDialog, closeDialog } = useDialog();
 
   useEffect(() => {
@@ -116,6 +126,16 @@ export default function Home() {
       if (docs && total) {
         setPosts(docs);
         setTotalPosts(total);
+      }
+      setLoading(false);
+    })();
+  }, []);
+
+  useEffect(() => {
+    (async () => {
+      const { docs, total } = await fetchSuggestedAccounts();
+      if (docs && total) {
+        setSuggestedAccounts({ loading: false, accounts: docs.splice(0, 5) });
       }
       setLoading(false);
     })();
@@ -163,9 +183,23 @@ export default function Home() {
     }
   }, [file]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const handleOpenComments = (event) => {
+  const handleOpenComments = (post) => {
+    const onCommentSuccess = (postId, comment) => {
+      addComment(comment);
+      setTimeout(() => {
+        setPosts((prevPosts) =>
+          prevPosts.map((post) => {
+            if (post.$id === postId) {
+              post.comments = [...post.comments, comment.$id];
+            }
+            return post;
+          })
+        );
+      }, 100);
+    };
+
     const dialogBody = {
-      children: <popups.CommentDialogBody />,
+      children: <popups.CommentDialogBody post={post} />,
       props: { sx: { m: 0, p: 0 } },
     };
 
@@ -180,7 +214,10 @@ export default function Home() {
       dialogActions: {
         props: { sx: { padding: 0 } },
         children: (
-          <popups.CommentDialogActions file={file} handleClose={handleClose} />
+          <popups.CommentDialogActions
+            onCommentSuccess={onCommentSuccess}
+            post={post}
+          />
         ),
       },
     });
@@ -193,58 +230,60 @@ export default function Home() {
           {loading ? (
             <Loading />
           ) : (
-            posts.map((post) => (
-              <div key={post.$id}>
-                <Post
-                  style={{
+            <>
+              {posts.map((post) => (
+                <div key={post.$id}>
+                  <Post
+                    style={{
+                      [theme.breakpoints.up("sm")]: {
+                        marginRight: 10,
+                        marginLeft: "auto",
+                      },
+                    }}
+                    post={post}
+                    openComments={handleOpenComments}
+                  />
+                </div>
+              ))}
+              {fetching === 1 && (
+                <Box
+                  sx={{
+                    width: "600px",
+                    mb: 2,
                     [theme.breakpoints.up("sm")]: {
                       marginRight: 10,
                       marginLeft: "auto",
                     },
+                    textAlign: "center",
+                    fontStyle: "italic",
+                    fontWeight: "bold",
+                    fontFamily: "calibri",
+                    color: "rgb(180, 180, 180)",
                   }}
-                  post={post}
-                  openComments={handleOpenComments}
-                />
-              </div>
-            ))
-          )}
-          {fetching === 1 && (
-            <Box
-              sx={{
-                width: "600px",
-                mb: 2,
-                [theme.breakpoints.up("sm")]: {
-                  marginRight: 10,
-                  marginLeft: "auto",
-                },
-                textAlign: "center",
-                fontStyle: "italic",
-                fontWeight: "bold",
-                fontFamily: "calibri",
-                color: "rgb(180, 180, 180)",
-              }}
-            >
-              Fetching new posts...
-            </Box>
-          )}
-          {fetching === 3 && (
-            <Box
-              sx={{
-                width: "600px",
-                mb: 2,
-                [theme.breakpoints.up("sm")]: {
-                  marginRight: 10,
-                  marginLeft: "auto",
-                },
-                textAlign: "center",
-                fontStyle: "italic",
-                fontWeight: "bold",
-                fontFamily: "calibri",
-                color: "rgb(180, 180, 180)",
-              }}
-            >
-              You are all caught up!
-            </Box>
+                >
+                  Fetching new posts...
+                </Box>
+              )}
+              {fetching === 3 && (
+                <Box
+                  sx={{
+                    width: "600px",
+                    mb: 2,
+                    [theme.breakpoints.up("sm")]: {
+                      marginRight: 10,
+                      marginLeft: "auto",
+                    },
+                    textAlign: "center",
+                    fontStyle: "italic",
+                    fontWeight: "bold",
+                    fontFamily: "calibri",
+                    color: "rgb(180, 180, 180)",
+                  }}
+                >
+                  You are all caught up!
+                </Box>
+              )}
+            </>
           )}
         </Grid>
         <Grid
@@ -309,15 +348,18 @@ export default function Home() {
             >
               Suggested accounts
             </Typography>
-
-            {suggestedAccounts.map((user, i) => (
-              <SuggestedAccount
-                key={i}
-                id={user.id}
-                name={user.name}
-                profile_image={user.profile_img}
-              />
-            ))}
+            {suggestedAccounts.loading ? (
+              <Loading style={{ minHeight: "40vh" }} />
+            ) : (
+              suggestedAccounts.accounts.map((profile, i) => (
+                <SuggestedAccount
+                  key={i}
+                  id={profile.user_id}
+                  name={profile.username}
+                  profile_image={profile.profile_image.href}
+                />
+              ))
+            )}
           </Box>
         </Grid>
       </Grid>

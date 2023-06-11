@@ -1,5 +1,5 @@
-import { ID } from "appwrite";
-import { Fragment, useEffect, useState } from "react";
+import { ID, Query } from "appwrite";
+import { Fragment, useEffect, useRef, useState } from "react";
 import { toast } from "react-toastify";
 
 import Avatar from "@mui/material/Avatar";
@@ -24,7 +24,10 @@ import { useDialog } from "../../hooks/useDialog";
 import { useAuth } from "../../hooks/useAuth";
 
 import { databases, storage } from "../../appwrite/config";
-import { processProfileImg } from "../../utils/helpers";
+import { processProfileImg, getProfileFromUserId } from "../../utils/helpers";
+import useComment from "../../hooks/useComment";
+import { formatTimeAgo } from "../../utils/helpers";
+import Loading from "../Loading";
 
 export const DialogHeader = () => {
   return (
@@ -136,81 +139,162 @@ export const CommentDialogHeader = () => {
   );
 };
 
-export const CommentDialogBody = () => {
-  const [comments] = useState([
-    {
-      $id: "dhaidas",
-      comment: "hello there",
-      user: {
-        name: "Some Person",
-      },
-      profile: {
-        img: null,
-      },
-      created_on: new Date(),
-    },
-  ]);
+export const CommentDialogBody = ({ post }) => {
+  const elRef = useRef(null);
+  const [loading, setLoading] = useState(true);
+  const [comments, setComments] = useState([]);
+  const { comment, addComment } = useComment();
+
+  useEffect(() => {
+    (async () => {
+      // TODO: update the post here
+      if (comment?.post_id === post.$id) {
+        comment.profile = await getProfileFromUserId(comment.user_id);
+        setComments((prevComments) => [...prevComments, comment]);
+      }
+      elRef.current.scrollTo({
+        top: elRef.current.scrollHeight,
+        behavior: "smooth",
+      });
+    })();
+
+    return () => addComment(null);
+  }, [comment, post, addComment]);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const doc = await databases.listDocuments(
+          process.env.REACT_APP_DATABASE_ID,
+          process.env.REACT_APP_COMMENT_COLLECTION_ID,
+          [Query.equal("post_id", post.$id)]
+        );
+        if (doc.total > 0) {
+          setComments(
+            await Promise.all(
+              doc.documents.map(async (document) => ({
+                ...document,
+                profile: await getProfileFromUserId(document.user_id),
+              }))
+            )
+          );
+        }
+      } catch (error) {
+        if (error?.response?.text)
+          toast(error?.response?.text, { type: "error" });
+        else {
+          console.log(error);
+          toast("Something went wrong", { type: "error" });
+        }
+      }
+    })();
+    setLoading(false);
+  }, [comments, post]);
 
   return (
     <List
       component="ul"
-      sx={{ maxHeight: "600px", minHeight: "300px", height: "100%" }}
+      sx={{
+        maxHeight: "600px",
+        minHeight: "300px",
+        height: "100%",
+        overflowY: "auto",
+      }}
+      ref={elRef}
     >
-      {comments.map((c, i) => (
-        <Fragment key={i}>
-          <ListItem alignItems="flex-start">
-            <ListItemAvatar>
-              <Avatar
-                alt={c.user.name}
-                src={c.profile.img}
-                style={{ backgroundColor: "#d2d2d2" }}
-              />
-            </ListItemAvatar>
-            <ListItemText
-              primary={
-                <strong
-                  style={{
-                    color: "rgb(225, 225, 225)",
-                    textTransform: "capitalize",
-                    fontSize: "13px",
-                  }}
-                >
-                  {c.user.name}
-                </strong>
-              }
-              secondary={
-                <>
-                  <Typography
-                    component="span"
-                    color={"rgb(215, 215, 215)"}
-                    sx={{ fontSize: "14px" }}
+      {loading ? (
+        <Loading style={{ minHeight: "inherit" }} />
+      ) : (
+        comments.map((c, i) => (
+          <Fragment key={i}>
+            <ListItem alignItems="flex-start">
+              <ListItemAvatar>
+                <Avatar
+                  alt={c?.profile.username}
+                  src={c?.profile.profile_image.href}
+                  style={{ backgroundColor: "#d2d2d2" }}
+                />
+              </ListItemAvatar>
+              <ListItemText
+                primary={
+                  <strong
+                    style={{
+                      color: "rgb(225, 225, 225)",
+                      textTransform: "capitalize",
+                      fontSize: "13px",
+                    }}
                   >
-                    {c.comment}
-                  </Typography>
-                  <br />
-                  <span style={{ fontSize: "10px" }}>
-                    {c.created_on.toString()}
-                  </span>
-                </>
-              }
-            />
-          </ListItem>
-        </Fragment>
-      ))}
+                    {c?.profile.username}
+                  </strong>
+                }
+                secondary={
+                  <>
+                    <Typography
+                      component="span"
+                      color={"rgb(215, 215, 215)"}
+                      sx={{ fontSize: "14px" }}
+                    >
+                      {c?.message}
+                    </Typography>
+                    <br />
+                    <span style={{ fontSize: "10px" }}>
+                      {formatTimeAgo(new Date(c?.posted_on))}
+                    </span>
+                  </>
+                }
+              />
+            </ListItem>
+          </Fragment>
+        ))
+      )}
     </List>
   );
 };
 
-export const CommentDialogActions = () => {
+export const CommentDialogActions = ({ post, onCommentSuccess }) => {
   const [comment, setComment] = useState("");
-  const handleSubmit = (e) => {
+  const [auth] = useAuth();
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("post comment");
+    try {
+      const doc = await databases.createDocument(
+        process.env.REACT_APP_DATABASE_ID,
+        process.env.REACT_APP_COMMENT_COLLECTION_ID,
+        ID.unique(),
+        {
+          message: comment,
+          post_id: post.$id,
+          user_id: auth.user.$id,
+          posted_on: new Date().toISOString().replace("Z", "+00:00"),
+        }
+      );
+      await databases.updateDocument(
+        process.env.REACT_APP_DATABASE_ID,
+        process.env.REACT_APP_POST_COLLECTION_ID,
+        post.$id,
+        {
+          comments: [...post.comments, doc.$id],
+        }
+      );
+      onCommentSuccess(post.$id, doc);
+    } catch (error) {
+      if (error?.response?.text)
+        toast(error?.response?.text, { type: "error" });
+      else {
+        console.log(error);
+        toast("Something went wrong", { type: "error" });
+      }
+    }
+    setComment("");
   };
 
   return (
     <Stack direction="row" alignItems="flex-start" sx={{ width: "100%", p: 2 }}>
-      <Avatar sx={{ marginRight: "10px" }} />
+      <Avatar
+        sx={{ marginRight: "10px" }}
+        src={auth.user.profile.profile_image.href}
+      />
       <form onSubmit={handleSubmit} style={{ display: "flex", width: "100%" }}>
         <TextField
           variant="outlined"

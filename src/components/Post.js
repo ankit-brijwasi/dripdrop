@@ -23,7 +23,6 @@ import { useAuth } from "../hooks/useAuth";
 import { formatTimeAgo } from "../utils/helpers";
 import Carousel from "./Carousel";
 
-
 function RenderCarousel({ images }) {
   const [items, setItems] = useState([]);
 
@@ -92,10 +91,6 @@ export default function Post(props) {
     );
   };
 
-  const handleComment = () => {
-    props.openComments();
-  };
-
   const toggleBookmark = async () => {
     if (!post.saved_by.find((user) => user === auth?.user?.$id)) {
       setPost((prevState) => ({
@@ -125,7 +120,6 @@ export default function Post(props) {
         saved_by: post.saved_by.filter((user) => user !== auth?.user?.$id),
       }
     );
-
   };
 
   return (
@@ -230,7 +224,11 @@ export default function Post(props) {
                 : "Like"}
             </span>
           </Button>
-          <Button onClick={handleComment} color="inherit" sx={{ width: "50%" }}>
+          <Button
+            onClick={() => props.openComments(post)}
+            color="inherit"
+            sx={{ width: "50%" }}
+          >
             <CommentIcon
               fontSize="small"
               sx={{ color: "rgb(200, 200, 200)" }}

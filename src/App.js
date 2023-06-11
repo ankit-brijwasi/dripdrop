@@ -16,6 +16,7 @@ import ChatIndex from "./components/chat/Index";
 
 // context
 import { AuthProvider } from "./context/authContext";
+import { CommentProvider } from "./context/commentContext";
 import { DialogProvider } from "./context/dialogContext";
 import { NewChatProvider } from "./context/newChatContext";
 
@@ -44,25 +45,27 @@ function App() {
         <ThemeProvider theme={theme}>
           <CssBaseline />
           <Router>
-            <DialogProvider>
-              <Routes>
-                <Route path="/" element={<Layout />}>
-                  <Route index element={<Home />} />
-                  <Route
-                    path="/accounts/me"
-                    element={<Profile myProfile={true} />}
-                  />
-                  <Route path="/settings" element={<Setting />} />
-                  <Route path="/chats" element={<ChatLayout />}>
-                    <Route index element={<ChatIndex />} />
-                    <Route path=":userId" element={<Chat />} />
+            <CommentProvider>
+              <DialogProvider>
+                <Routes>
+                  <Route path="/" element={<Layout />}>
+                    <Route index element={<Home />} />
+                    <Route
+                      path="/accounts/me"
+                      element={<Profile myProfile={true} />}
+                    />
+                    <Route path="/settings" element={<Setting />} />
+                    <Route path="/chats" element={<ChatLayout />}>
+                      <Route index element={<ChatIndex />} />
+                      <Route path=":userId" element={<Chat />} />
+                    </Route>
+                    <Route path="/:userId" element={<Profile />} />
                   </Route>
-                  <Route path="/:userId" element={<Profile />} />
-                </Route>
-                <Route path="/accounts/signin" element={<Login />} />
-                {/* <Route path="*" element={<NotFound />} /> */}
-              </Routes>
-            </DialogProvider>
+                  <Route path="/accounts/signin" element={<Login />} />
+                  {/* <Route path="*" element={<NotFound />} /> */}
+                </Routes>
+              </DialogProvider>
+            </CommentProvider>
           </Router>
           <ToastContainer />
         </ThemeProvider>

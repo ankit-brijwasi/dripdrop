@@ -1,9 +1,6 @@
 // react and material ui
 import { createContext, useEffect, useReducer } from "react";
 
-// third party modules
-import { toast } from "react-toastify";
-
 // custom modules
 import { account } from "../appwrite/config";
 import { getProfileFromUserId } from "../utils/helpers";
@@ -72,7 +69,6 @@ export function AuthProvider({ children }) {
 
         dispatch({ type: "signin", user: { ...user, profile }, error: null });
       } catch (error) {
-        toast(error?.response?.message, { type: "error" });
         dispatch({ type: "signout" });
       }
       return;

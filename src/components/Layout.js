@@ -1,4 +1,5 @@
 // react and react router dom modules
+import { useEffect } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
 
 // material ui modules
@@ -6,9 +7,9 @@ import Box from "@mui/material/Box";
 
 // custom components & modules
 import { RealtimeProvider } from "../context/realtimeContext";
-import Navbar from "./Navbar";
+
 import { useAuth } from "../hooks/useAuth";
-import { useEffect } from "react";
+import Navbar from "./Navbar";
 
 // Layout Component: Defines the structure of the application
 function Layout() {
