@@ -356,7 +356,10 @@ export default function Home() {
                   key={i}
                   id={profile.user_id}
                   name={profile.username}
+                  profile_id={profile.$id}
                   profile_image={profile.profile_image.href}
+                  followers={profile.followers.filter(Boolean)}
+                  following={profile.following.filter(Boolean)}
                 />
               ))
             )}

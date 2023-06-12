@@ -1,6 +1,6 @@
 // react, react router dom and others
-import { ID } from "appwrite"
-import { useEffect, useState, Fragment, useRef } from "react";
+import { ID } from "appwrite";
+import { useEffect, useState, useRef } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "react-toastify";
 
@@ -14,13 +14,6 @@ import InputBase from "@mui/material/InputBase";
 import TextField from "@mui/material/TextField";
 import Toolbar from "@mui/material/Toolbar";
 import Typography from "@mui/material/Typography";
-import Grow from "@mui/material/Grow";
-import Paper from "@mui/material/Paper";
-import List from "@mui/material/List";
-import ListSubheader from "@mui/material/ListSubheader";
-import ListItemButton from "@mui/material/ListItemButton";
-import ListItemIcon from "@mui/material/ListItemIcon";
-import ListItemText from "@mui/material/ListItemText";
 import Tooltip from "@mui/material/Tooltip";
 
 // material ui styles api
@@ -28,9 +21,6 @@ import { styled, alpha } from "@mui/material/styles";
 
 // material ui icons
 import SearchIcon from "@mui/icons-material/Search";
-import ImageIcon from "@mui/icons-material/Image";
-import VideoFileIcon from "@mui/icons-material/VideoFile";
-import AudioFileIcon from "@mui/icons-material/AudioFile";
 import PowerSettingsNewIcon from "@mui/icons-material/PowerSettingsNew";
 import LanguageIcon from "@mui/icons-material/Language";
 import NotificationsNoneIcon from "@mui/icons-material/NotificationsNone";
@@ -38,10 +28,12 @@ import AddBoxIcon from "@mui/icons-material/AddBox";
 import ChatIcon from "@mui/icons-material/Chat";
 
 // custom modules
-import { account, databases, storage } from "../appwrite/config";
+import { account, databases, functions, storage } from "../appwrite/config";
 import { useDialog } from "../hooks/useDialog";
 import { useAuth } from "../hooks/useAuth";
 import Carousel from "./Carousel";
+import SearchBox from "./navbar/SearchBox";
+import NotificationBox from "./navbar/NotificationBox";
 
 const Search = styled("div")(({ theme }) => ({
   position: "relative",
@@ -84,73 +76,15 @@ const StyledInputBase = styled(InputBase)(({ theme }) => ({
   },
 }));
 
-const SearchBox = ({ open, results, clearResults }) => {
-  const paper = {
-    height: "auto",
-    position: "absolute",
-    transform: "translate(8px, 4px)",
-    width: "42.3ch",
-  };
-
-  const ellipsis = {
-    overflow: "hidden",
-    whiteSpace: "nowrap",
-    textOverflow: "ellipsis",
-  };
-
+const DialogHeader = () => {
   return (
-    <Grow
-      in={open}
-      style={{ transformOrigin: "0 0 0" }}
-      onExit={(e) => {
-        clearResults();
-      }}
-      mountOnEnter
-      unmountOnExit
-    >
-      <Paper sx={paper}>
-        <>
-          <List
-            component="nav"
-            subheader={
-              <ListSubheader component="div" id="nested-list-subheader">
-                Search results
-              </ListSubheader>
-            }
-            dense
-          >
-            {results.map((result, i) => (
-              <Fragment key={i}>
-                <ListItemButton onClick={() => {}}>
-                  <ListItemIcon>
-                    {result.type.split("/")[0] === "image" && (
-                      <ImageIcon fontSize="small" style={{ color: "#95f" }} />
-                    )}
-                    {result.type.split("/")[0] === "video" && (
-                      <VideoFileIcon
-                        fontSize="small"
-                        style={{ color: "#95f" }}
-                      />
-                    )}
-                    {result.type.split("/")[0] === "audio" && (
-                      <AudioFileIcon
-                        fontSize="small"
-                        style={{ color: "#95f" }}
-                      />
-                    )}
-                  </ListItemIcon>
-                  <ListItemText primary={result.name} style={ellipsis} />
-                </ListItemButton>
-              </Fragment>
-            ))}
-          </List>
-        </>
-      </Paper>
-    </Grow>
+    <Typography variant="h6" component={"span"} fontFamily="calibri">
+      Post new update
+    </Typography>
   );
 };
 
-const DialogBody = ({ files }) => {
+const DialogBody = ({ elRef, files }) => {
   const [items, setItems] = useState([]);
 
   useEffect(() => {
@@ -179,6 +113,7 @@ const DialogBody = ({ files }) => {
         type="text"
         placeholder="Provide a caption for your post"
         sx={{ marginBottom: 1.6 }}
+        inputProps={{ ref: elRef }}
         fullWidth
         multiline
         autoFocus
@@ -190,15 +125,7 @@ const DialogBody = ({ files }) => {
   );
 };
 
-const DialogHeader = () => {
-  return (
-    <Typography variant="h6" component={"span"} fontFamily="calibri">
-      Post new update
-    </Typography>
-  );
-};
-
-const DialogActions = ({ caption, files, handleClose }) => {
+const DialogActions = ({ files, getCaption, handleClose }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [auth] = useAuth();
@@ -222,9 +149,9 @@ const DialogActions = ({ caption, files, handleClose }) => {
         posted_on: new Date().toISOString().replace("Z", "+00:00"),
         file_ids,
       };
-      if (caption) postData.caption = caption;
 
-      await databases.createDocument(
+      if (getCaption()) postData.caption = getCaption();
+      const post = await databases.createDocument(
         process.env.REACT_APP_DATABASE_ID,
         process.env.REACT_APP_POST_COLLECTION_ID,
         ID.unique(),
@@ -232,6 +159,14 @@ const DialogActions = ({ caption, files, handleClose }) => {
       );
       handleClose();
       toast("Posted new update in your timeline!", { type: "info" });
+
+      await functions.createExecution(
+        process.env.REACT_APP_GENERATE_NOTIFICATION_FUNC,
+        JSON.stringify({
+          action: "post-added",
+          post_id: post.$id
+        })
+      );
     } catch (e) {
       setError(e);
     }
@@ -271,11 +206,13 @@ export default function NavBar(props) {
   const [openSearch, setOpenSearch] = useState(false);
   const [keyword, setKeyword] = useState("");
   const [searchResults, setSearchResults] = useState([]);
+  const [openNotification, setOpenNotification] = useState(false);
   const [files, setFiles] = useState([]);
 
   const auth = useAuth();
   const { openDialog, closeDialog } = useDialog();
   const inputEl = useRef();
+  const captionEl = useRef();
 
   useEffect(() => {
     if (keyword.length > 0) {
@@ -314,13 +251,19 @@ export default function NavBar(props) {
     if (files.length > 0) {
       openDialog(
         {
-          children: <DialogBody files={files} />,
+          children: <DialogBody elRef={captionEl} files={files} />,
         },
         {
           dialogProps: { maxWidth: "md", onClose: handleClose },
           dialogHeader: { children: <DialogHeader /> },
           dialogActions: {
-            children: <DialogActions files={files} handleClose={handleClose} />,
+            children: (
+              <DialogActions
+                getCaption={() => captionEl.current?.value}
+                files={files}
+                handleClose={handleClose}
+              />
+            ),
           },
         }
       );
@@ -353,7 +296,6 @@ export default function NavBar(props) {
               alignItems: "center",
             }}
           >
-            <LanguageIcon sx={{ mr: 1.5 }} />
             <Typography
               variant="h6"
               noWrap
@@ -369,6 +311,7 @@ export default function NavBar(props) {
                 textDecoration: "none",
               }}
             >
+              <LanguageIcon sx={{ mr: 1.5, mt: 0.5 }} />
               DripDrop
             </Typography>
           </div>
@@ -425,11 +368,24 @@ export default function NavBar(props) {
               <ChatIcon />
             </IconButton>
           </Tooltip>
-          <Tooltip title="Notifications">
-            <IconButton color="inherit" sx={{ marginRight: 1 }}>
-              <NotificationsNoneIcon />
-            </IconButton>
-          </Tooltip>
+          <ClickAwayListener
+            onClickAway={() => {
+              setOpenNotification(false);
+            }}
+          >
+            <div>
+              <Tooltip title="Notifications">
+                <IconButton
+                  color="inherit"
+                  onClick={() => setOpenNotification(!openNotification)}
+                  sx={{ marginRight: 1 }}
+                >
+                  <NotificationsNoneIcon />
+                </IconButton>
+              </Tooltip>
+              {openNotification && <NotificationBox open={openNotification} />}
+            </div>
+          </ClickAwayListener>
           <Tooltip title="Log out">
             <IconButton
               onClick={handleLogout}

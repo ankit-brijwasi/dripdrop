@@ -30,6 +30,13 @@ function updateUser(user) {
   return { ...user };
 }
 
+function updateUserProfile(profile) {
+  const user = JSON.parse(localStorage.getItem("user"));
+  user.profile = profile;
+  localStorage.setItem("user", JSON.stringify(user));
+  return { ...user };
+}
+
 function reducer(state, action) {
   switch (action.type) {
     case "signin":
@@ -51,6 +58,12 @@ function reducer(state, action) {
         ...state,
         user: updateUser(action.user),
       };
+    case "update-profile":
+      return {
+        ...state,
+        user: updateUserProfile(action.profile),
+      };
+
     case "error":
       return { error: action.error };
     default:

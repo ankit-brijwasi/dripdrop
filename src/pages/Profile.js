@@ -26,6 +26,7 @@ import ProfileHoc from "../hoc/ProfileHOC";
 
 // custom modules
 import { useAuth } from "../hooks/useAuth";
+import { useFollow } from "../hooks/useFollow";
 
 // appwrite
 import Post from "../components/profile/Post";
@@ -83,6 +84,21 @@ const CustomTab = styled((props) => <Tab {...props} />)(({ theme }) => ({
 function Profile({ userId, profile, me }) {
   const [value, setValue] = useState(0);
   const [auth] = useAuth();
+  const { follow, unfollow } = useFollow();
+
+  const [followers, setFollowers] = useState(profile.followers);
+
+  const handleFollow = async () => {
+    setFollowers((prevState) => [...prevState, auth.user.$id]);
+    await follow(profile.user_id);
+  };
+
+  const handleUnfollow = async () => {
+    setFollowers((prevState) =>
+      prevState.filter((follower) => follower !== auth.user.$id)
+    );
+    await unfollow(profile.user_id);
+  };
 
   const handleChange = (event, newValue) => {
     setValue(newValue);
@@ -115,7 +131,7 @@ function Profile({ userId, profile, me }) {
                 <>
                   <Box sx={{ marginTop: 0.5 }}>
                     <Typography variant="h6">{profile?.username}</Typography>
-                    {me && (
+                    {(me || profile.user_id === auth.user.$id) && (
                       <span
                         style={{
                           textTransform: "none",
@@ -130,14 +146,34 @@ function Profile({ userId, profile, me }) {
                       </span>
                     )}
                   </Box>
-                  {me ? (
+                  {me || profile.user_id === auth.user.$id ? (
                     <IconButton component={Link} to="/settings">
                       <SettingsIcon />
                     </IconButton>
                   ) : (
-                    <Button variant="outlined" size="small" color="primary">
-                      Follow
-                    </Button>
+                    <>
+                      {followers.find(
+                        (follower) => follower === auth?.user?.$id
+                      ) ? (
+                        <Button
+                          variant="contained"
+                          size="small"
+                          color="primary"
+                          onClick={handleUnfollow}
+                        >
+                          Unfollow
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="outlined"
+                          size="small"
+                          color="primary"
+                          onClick={handleFollow}
+                        >
+                          Follow
+                        </Button>
+                      )}
+                    </>
                   )}
                 </>
               )}
@@ -149,10 +185,10 @@ function Profile({ userId, profile, me }) {
               marginBottom={1.5}
             >
               <Typography variant="subtitle1" sx={{ marginRight: 1 }}>
-                {profile?.followers ? profile.followers.length : 0} followers
+                {followers.length} follower
               </Typography>
               <Typography variant="subtitle1" sx={{ marginLeft: 1 }}>
-                {profile?.following ? profile.following.length : 0} followers
+                {profile.following.length} following
               </Typography>
             </Stack>
             <Typography variant="caption">
@@ -183,7 +219,7 @@ function Profile({ userId, profile, me }) {
           }
           {...tabProps(0)}
         />
-        {me && (
+        {(me || profile.user_id === auth.user.$id) && (
           <CustomTab
             label={
               <span>

@@ -22,12 +22,13 @@ import CloseIcon from "@mui/icons-material/Close";
 
 import { useDialog } from "../../hooks/useDialog";
 import { useAuth } from "../../hooks/useAuth";
-
-import { databases, storage } from "../../appwrite/config";
-import { processProfileImg, getProfileFromUserId } from "../../utils/helpers";
 import useComment from "../../hooks/useComment";
+
+import { databases, functions, storage } from "../../appwrite/config";
+import { processProfileImg, getProfileFromUserId } from "../../utils/helpers";
 import { formatTimeAgo } from "../../utils/helpers";
 import Loading from "../Loading";
+
 
 export const DialogHeader = () => {
   return (
@@ -278,6 +279,15 @@ export const CommentDialogActions = ({ post, onCommentSuccess }) => {
         }
       );
       onCommentSuccess(post.$id, doc);
+      await functions.createExecution(
+        process.env.REACT_APP_GENERATE_NOTIFICATION_FUNC,
+        JSON.stringify({
+          updated_field: "comments",
+          user_id: auth.user.$id,
+          action: "comment",
+          post_id: post.$id,
+        })
+      );
     } catch (error) {
       if (error?.response?.text)
         toast(error?.response?.text, { type: "error" });

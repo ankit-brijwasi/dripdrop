@@ -18,10 +18,12 @@ import CommentIcon from "@mui/icons-material/ModeCommentOutlined";
 import ThumbUpIcon from "@mui/icons-material/ThumbUp";
 import ThumbUpOutlinedIcon from "@mui/icons-material/ThumbUpOutlined";
 
-import { databases } from "../appwrite/config";
+import { databases, functions } from "../appwrite/config";
 import { useAuth } from "../hooks/useAuth";
 import { formatTimeAgo } from "../utils/helpers";
 import Carousel from "./Carousel";
+import Link from "./Link";
+
 
 function RenderCarousel({ images }) {
   const [items, setItems] = useState([]);
@@ -62,6 +64,7 @@ export default function Post(props) {
 
   const toggleLike = async () => {
     if (!post.liked_by.find((user) => user === auth?.user?.$id)) {
+      // post is liked
       setPost((prevState) => ({
         ...prevState,
         liked_by: [...new Set([...prevState.liked_by, auth?.user?.$id])],
@@ -73,6 +76,15 @@ export default function Post(props) {
         {
           liked_by: [...new Set([...post.liked_by, auth?.user?.$id])],
         }
+      );
+      await functions.createExecution(
+        process.env.REACT_APP_GENERATE_NOTIFICATION_FUNC,
+        JSON.stringify({
+          updated_field: "liked_by",
+          user_id: auth.user.$id,
+          action: "like",
+          post_id: post.$id,
+        })
       );
       return;
     }
@@ -132,7 +144,14 @@ export default function Post(props) {
             aria-label="recipe"
           />
         }
-        title={post.profile.username}
+        title={
+          <Link
+            href={`/${post.profile.user_id}`}
+            sx={{ color: "rgb(220, 220, 220)" }}
+          >
+            {post.profile.username}
+          </Link>
+        }
         subheader={
           <span style={{ fontSize: "12px", marginTop: -2, display: "block" }}>
             {currentTime}

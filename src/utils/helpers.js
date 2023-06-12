@@ -22,6 +22,15 @@ export const processPostFile = (fileId) => {
   }
 };
 
+export const processProfile = (profile) => {
+  return {
+    ...profile,
+    profile_image: processProfileImg(profile.profile_image),
+    followers: profile.followers.filter(Boolean),
+    following: profile.following.filter(Boolean),
+  };
+};
+
 export async function getProfileFromUserId(userId) {
   const docs = await databases.listDocuments(
     process.env.REACT_APP_DATABASE_ID,
@@ -31,12 +40,7 @@ export async function getProfileFromUserId(userId) {
 
   if (docs.total > 0) {
     const profile = docs.documents[0];
-    return {
-      ...profile,
-      profile_image: processProfileImg(profile.profile_image),
-      followers: profile.followers.filter(Boolean),
-      following: profile.following.filter(Boolean),
-    };
+    return processProfile(profile);
   }
 
   // this should ideally never happen
