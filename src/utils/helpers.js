@@ -22,6 +22,19 @@ export const processPostFile = (fileId) => {
   }
 };
 
+export const getPostFilePreview = (fileId, x = 40, y = 40) => {
+  try {
+    return new URL(fileId);
+  } catch (_) {
+    return storage.getFilePreview(
+      process.env.REACT_APP_USER_DATA_BUCKET,
+      fileId,
+      x,
+      y
+    );
+  }
+};
+
 export const processProfile = (profile) => {
   return {
     ...profile,
@@ -225,5 +238,62 @@ export async function likePost(post, auth) {
       post_id: post.$id,
     })
   );
+}
 
+export function searchAndArrangeArray(arr, keyword, property) {
+  function calculateLevenshteinDistance(a, b) {
+    const distanceMatrix = Array(b.length + 1)
+      .fill(null)
+      .map(() => Array(a.length + 1).fill(null));
+
+    for (let i = 0; i <= a.length; i++) {
+      distanceMatrix[0][i] = i;
+    }
+
+    for (let j = 0; j <= b.length; j++) {
+      distanceMatrix[j][0] = j;
+    }
+
+    for (let j = 1; j <= b.length; j++) {
+      for (let i = 1; i <= a.length; i++) {
+        const indicator = a[i - 1] === b[j - 1] ? 0 : 1;
+        distanceMatrix[j][i] = Math.min(
+          distanceMatrix[j][i - 1] + 1,
+          distanceMatrix[j - 1][i] + 1,
+          distanceMatrix[j - 1][i - 1] + indicator
+        );
+      }
+    }
+
+    return distanceMatrix[b.length][a.length];
+  }
+
+  const comparator = (a, b) => {
+    const aValue = a[property].toLowerCase();
+    const bValue = b[property].toLowerCase();
+
+    const aMatch = aValue.includes(keyword.toLowerCase());
+    const bMatch = bValue.includes(keyword.toLowerCase());
+
+    if (aMatch && !bMatch) {
+      return -1;
+    } else if (!aMatch && bMatch) {
+      return 1;
+    } else {
+      const aDistance = calculateLevenshteinDistance(
+        aValue,
+        keyword.toLowerCase()
+      );
+      const bDistance = calculateLevenshteinDistance(
+        bValue,
+        keyword.toLowerCase()
+      );
+
+      return aDistance - bDistance;
+    }
+  };
+
+  const sortedArr = arr.sort(comparator);
+
+  return sortedArr;
 }

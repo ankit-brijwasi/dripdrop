@@ -67,7 +67,7 @@ export const RenderCarousel = ({ images, detailed }) => {
       <CardMedia
         key={index}
         component="img"
-        height={detailed ? "796px" : "500px"}
+        height={detailed ? "829px" : "500px"}
         width={detailed ? "700px" : "500px"}
         image={file}
         alt="post caption"

@@ -192,7 +192,7 @@ export default function PostBody({ post }) {
           ) : (
             <CardMedia
               component="img"
-              height="796px"
+              height="830px"
               width="700px"
               sx={{ objectFit: "cover" }}
               image={post.files[0].file.href}

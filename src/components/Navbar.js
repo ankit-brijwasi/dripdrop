@@ -1,5 +1,5 @@
 // react, react router dom and others
-import { ID } from "appwrite";
+import { ID, Query } from "appwrite";
 import { useEffect, useState, useRef } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "react-toastify";
@@ -34,6 +34,12 @@ import { useAuth } from "../hooks/useAuth";
 import Carousel from "./Carousel";
 import SearchBox from "./navbar/SearchBox";
 import NotificationBox from "./navbar/NotificationBox";
+import {
+  getPostFilePreview,
+  getProfileFromUserId,
+  processProfile,
+  searchAndArrangeArray,
+} from "../utils/helpers";
 
 const Search = styled("div")(({ theme }) => ({
   position: "relative",
@@ -70,7 +76,7 @@ const StyledInputBase = styled(InputBase)(({ theme }) => ({
     [theme.breakpoints.up("sm")]: {
       width: "30ch",
       "&:focus": {
-        width: "35ch",
+        width: "41.7ch",
       },
     },
   },
@@ -164,7 +170,7 @@ const DialogActions = ({ files, getCaption, handleClose }) => {
         process.env.REACT_APP_GENERATE_NOTIFICATION_FUNC,
         JSON.stringify({
           action: "post-added",
-          post_id: post.$id
+          post_id: post.$id,
         })
       );
     } catch (e) {
@@ -205,7 +211,8 @@ const DialogActions = ({ files, getCaption, handleClose }) => {
 export default function NavBar(props) {
   const [openSearch, setOpenSearch] = useState(false);
   const [keyword, setKeyword] = useState("");
-  const [searchResults, setSearchResults] = useState([]);
+  const [persons, setPersons] = useState([]);
+  const [posts, setPosts] = useState([]);
   const [openNotification, setOpenNotification] = useState(false);
   const [files, setFiles] = useState([]);
 
@@ -215,12 +222,68 @@ export default function NavBar(props) {
   const captionEl = useRef();
 
   useEffect(() => {
+    let timeoutId;
+    const search = async () => {
+      let resultsFound = false;
+
+      const profileDocs = await databases.listDocuments(
+        process.env.REACT_APP_DATABASE_ID,
+        process.env.REACT_APP_PROFILE_COLLECTION_ID,
+        [Query.search("username", keyword)]
+      );
+
+      const postDocs = await databases.listDocuments(
+        process.env.REACT_APP_DATABASE_ID,
+        process.env.REACT_APP_POST_COLLECTION_ID,
+        [Query.search("caption", keyword)]
+      );
+
+      if (profileDocs.total > 0) {
+        profileDocs.documents = profileDocs.documents.map((doc) =>
+          processProfile(doc)
+        );
+        profileDocs.documents = searchAndArrangeArray(
+          profileDocs.documents,
+          keyword,
+          "username"
+        );
+        setPersons(profileDocs.documents.splice(0, 6));
+        resultsFound = true;
+      }
+
+      if (postDocs.total > 0) {
+        postDocs.documents = postDocs.documents.map((doc) => {
+          let previewFile;
+          if (doc.file_ids.length > 0)
+            previewFile = getPostFilePreview(doc.file_ids[0], 40, 40);
+          else previewFile = null;
+          return {
+            ...doc,
+            profile: getProfileFromUserId(doc.user_id),
+            previewFile,
+          };
+        });
+        postDocs.documents = searchAndArrangeArray(
+          postDocs.documents,
+          keyword,
+          "caption"
+        );
+        setPosts(postDocs.documents.splice(0, 6));
+        resultsFound = true;
+      }
+
+      if (resultsFound) setOpenSearch(true);
+    };
+
     if (keyword.length > 0) {
-      setOpenSearch(true);
-      // TODO: call the searching apis, make sure that there is a jitter
+      timeoutId = setTimeout(search, 500);
     } else {
       setOpenSearch(false);
     }
+
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+    };
   }, [keyword]);
 
   const handleAddPost = () => {
@@ -336,8 +399,12 @@ export default function NavBar(props) {
               </Search>
               <SearchBox
                 open={openSearch}
-                results={searchResults}
-                clearResults={() => setSearchResults([])}
+                persons={persons}
+                posts={posts}
+                clearResults={() => {
+                  setPersons([]);
+                  setPosts([]);
+                }}
               />
             </Box>
           </ClickAwayListener>
