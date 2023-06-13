@@ -18,34 +18,13 @@ import CommentIcon from "@mui/icons-material/ModeCommentOutlined";
 import ThumbUpIcon from "@mui/icons-material/ThumbUp";
 import ThumbUpOutlinedIcon from "@mui/icons-material/ThumbUpOutlined";
 
-import { databases, functions } from "../appwrite/config";
+import { databases } from "../appwrite/config";
 import { useAuth } from "../hooks/useAuth";
-import { formatTimeAgo } from "../utils/helpers";
-import Carousel from "./Carousel";
+import { formatTimeAgo, likePost, unlikePost } from "../utils/helpers";
+import { RenderCarousel } from "./Carousel";
 import Link from "./Link";
 
-
-function RenderCarousel({ images }) {
-  const [items, setItems] = useState([]);
-
-  useEffect(() => {
-    const imgEl = images.map((file, index) => (
-      <CardMedia
-        key={index}
-        component="img"
-        height="600px"
-        image={file}
-        alt="post caption"
-        sx={{ objectFit: "contain", mb: 1 }}
-      />
-    ));
-    setItems(imgEl);
-  }, [images]);
-
-  return <Carousel disableDotsControls={true} items={items} />;
-}
-
-export default function Post(props) {
+export default function Feed(props) {
   const [post, setPost] = useState(props.post);
   const [auth] = useAuth();
   const dateTime = useMemo(
@@ -69,23 +48,7 @@ export default function Post(props) {
         ...prevState,
         liked_by: [...new Set([...prevState.liked_by, auth?.user?.$id])],
       }));
-      await databases.updateDocument(
-        process.env.REACT_APP_DATABASE_ID,
-        process.env.REACT_APP_POST_COLLECTION_ID,
-        post?.$id,
-        {
-          liked_by: [...new Set([...post.liked_by, auth?.user?.$id])],
-        }
-      );
-      await functions.createExecution(
-        process.env.REACT_APP_GENERATE_NOTIFICATION_FUNC,
-        JSON.stringify({
-          updated_field: "liked_by",
-          user_id: auth.user.$id,
-          action: "like",
-          post_id: post.$id,
-        })
-      );
+      await likePost(post, auth);
       return;
     }
 
@@ -93,14 +56,7 @@ export default function Post(props) {
       ...prevState,
       liked_by: prevState.liked_by.filter((user) => user !== auth?.user?.$id),
     }));
-    await databases.updateDocument(
-      process.env.REACT_APP_DATABASE_ID,
-      process.env.REACT_APP_POST_COLLECTION_ID,
-      post?.$id,
-      {
-        liked_by: post.liked_by.filter((user) => user !== auth?.user?.$id),
-      }
-    );
+    await unlikePost(post, auth);
   };
 
   const toggleBookmark = async () => {
@@ -181,10 +137,10 @@ export default function Post(props) {
       ) : (
         <CardMedia
           component="img"
-          height="600px"
+          height="500px"
           image={post.files[0].file.href}
           alt="post caption"
-          sx={{ objectFit: "contain", mb: 1 }}
+          sx={{ objectFit: "cover" }}
         />
       )}
       <CardActions sx={{ mb: 1 }}>
@@ -261,3 +217,4 @@ export default function Post(props) {
     </Card>
   );
 }
+

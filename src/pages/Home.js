@@ -24,7 +24,7 @@ import { useDialog } from "../hooks/useDialog";
 import useScrollLoader from "../hooks/useScrollbar";
 
 import Loading from "../components/Loading";
-import Post from "../components/Post";
+import Feed from "../components/Feed";
 import SuggestedAccount from "../components/home/SuggestedAccount";
 import * as popups from "../components/home/Popups";
 
@@ -233,7 +233,7 @@ export default function Home() {
             <>
               {posts.map((post) => (
                 <div key={post.$id}>
-                  <Post
+                  <Feed
                     style={{
                       [theme.breakpoints.up("sm")]: {
                         marginRight: 10,

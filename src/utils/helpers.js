@@ -1,5 +1,5 @@
 import { Query, ID } from "appwrite";
-import { account, databases, storage } from "../appwrite/config";
+import { account, databases, storage, functions } from "../appwrite/config";
 
 export function processProfileImg(profileImg) {
   try {
@@ -194,3 +194,36 @@ export const formatTimeAgo = (date) => {
   const options = { year: "numeric", month: "long", day: "numeric" };
   return date.toLocaleDateString(undefined, options);
 };
+
+export async function unlikePost(post, auth) {
+  await databases.updateDocument(
+    process.env.REACT_APP_DATABASE_ID,
+    process.env.REACT_APP_POST_COLLECTION_ID,
+    post?.$id,
+    {
+      liked_by: post.liked_by.filter((user) => user !== auth?.user?.$id),
+    }
+  );
+}
+
+export async function likePost(post, auth) {
+  await databases.updateDocument(
+    process.env.REACT_APP_DATABASE_ID,
+    process.env.REACT_APP_POST_COLLECTION_ID,
+    post?.$id,
+    {
+      liked_by: [...new Set([...post.liked_by, auth?.user?.$id])],
+    }
+  );
+
+  await functions.createExecution(
+    process.env.REACT_APP_GENERATE_NOTIFICATION_FUNC,
+    JSON.stringify({
+      updated_field: "liked_by",
+      user_id: auth.user.$id,
+      action: "like",
+      post_id: post.$id,
+    })
+  );
+
+}

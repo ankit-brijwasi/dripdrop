@@ -100,9 +100,7 @@ function Profile({ userId, profile, me }) {
     await unfollow(profile.user_id);
   };
 
-  const handleChange = (event, newValue) => {
-    setValue(newValue);
-  };
+  const handleChange = (event, newValue) => setValue(newValue);
 
   return (
     <>

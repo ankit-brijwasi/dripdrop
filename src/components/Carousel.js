@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import PropTypes from "prop-types";
 
+import CardMedia from "@mui/material/CardMedia";
 import IconButton from "@mui/material/IconButton";
 
 import ArrowForwardIosIcon from "@mui/icons-material/ArrowForwardIos";
@@ -56,4 +57,25 @@ Carousel.propTypes = {
 Carousel.defaultProps = {
   disableDotsControls: false,
   items: [],
+};
+
+export const RenderCarousel = ({ images, detailed }) => {
+  const [items, setItems] = useState([]);
+
+  useEffect(() => {
+    const imgEl = images.map((file, index) => (
+      <CardMedia
+        key={index}
+        component="img"
+        height={detailed ? "796px" : "500px"}
+        width={detailed ? "700px" : "500px"}
+        image={file}
+        alt="post caption"
+        sx={{ objectFit: "cover" }}
+      />
+    ));
+    setItems(imgEl);
+  }, [images, detailed]);
+
+  return <Carousel disableDotsControls={true} items={items} />;
 };

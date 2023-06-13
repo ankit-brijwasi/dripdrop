@@ -12,13 +12,9 @@ const Transition = forwardRef(function Transition(props, ref) {
   return <Slide direction="up" ref={ref} {...props} />;
 });
 
-const initialState = {
-  TransitionComponent: Transition,
-};
-
 export function DialogProvider({ children }) {
   const [open, setOpen] = useState(false);
-  const [dialogProps, setDialogProps] = useState(initialState);
+  const [dialogProps, setDialogProps] = useState({});
   const [dialogHeader, setDialogHeader] = useState(null);
   const [dialogContent, setDialogContent] = useState(null);
   const [dialogActions, setDialogActions] = useState(null);
@@ -43,7 +39,12 @@ export function DialogProvider({ children }) {
 
   return (
     <DialogContext.Provider value={{ openDialog, closeDialog }}>
-      <Dialog open={open} onClose={closeDialog} {...dialogProps}>
+      <Dialog
+        open={open}
+        onClose={closeDialog}
+        TransitionComponent={Transition}
+        {...dialogProps}
+      >
         {dialogHeader && (
           <DialogTitle {...dialogHeader.props}>
             {dialogHeader.children}

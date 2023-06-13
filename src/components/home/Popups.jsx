@@ -24,11 +24,11 @@ import { useDialog } from "../../hooks/useDialog";
 import { useAuth } from "../../hooks/useAuth";
 import useComment from "../../hooks/useComment";
 
+import Link from "../Link";
 import { databases, functions, storage } from "../../appwrite/config";
 import { processProfileImg, getProfileFromUserId } from "../../utils/helpers";
 import { formatTimeAgo } from "../../utils/helpers";
 import Loading from "../Loading";
-
 
 export const DialogHeader = () => {
   return (
@@ -140,7 +140,7 @@ export const CommentDialogHeader = () => {
   );
 };
 
-export const CommentDialogBody = ({ post }) => {
+export const CommentDialogBody = ({ post, sx }) => {
   const elRef = useRef(null);
   const [loading, setLoading] = useState(true);
   const [comments, setComments] = useState([]);
@@ -148,7 +148,6 @@ export const CommentDialogBody = ({ post }) => {
 
   useEffect(() => {
     (async () => {
-      // TODO: update the post here
       if (comment?.post_id === post.$id) {
         comment.profile = await getProfileFromUserId(comment.user_id);
         setComments((prevComments) => [...prevComments, comment]);
@@ -190,7 +189,7 @@ export const CommentDialogBody = ({ post }) => {
       }
     })();
     setLoading(false);
-  }, [comments, post]);
+  }, [post]);
 
   return (
     <List
@@ -200,6 +199,7 @@ export const CommentDialogBody = ({ post }) => {
         minHeight: "300px",
         height: "100%",
         overflowY: "auto",
+        ...sx,
       }}
       ref={elRef}
     >
@@ -208,40 +208,54 @@ export const CommentDialogBody = ({ post }) => {
       ) : (
         comments.map((c, i) => (
           <Fragment key={i}>
-            <ListItem alignItems="flex-start">
-              <ListItemAvatar>
+            <ListItem sx={{ alignItems: "flex-start" }}>
+              <ListItemAvatar sx={{ marginRight: -1 }}>
                 <Avatar
                   alt={c?.profile.username}
                   src={c?.profile.profile_image.href}
-                  style={{ backgroundColor: "#d2d2d2" }}
+                  style={{
+                    width: 35,
+                    height: 35,
+                    objectFit: "contain",
+                    border: "1px solid #555",
+                    marginTop: "3px",
+                  }}
                 />
               </ListItemAvatar>
               <ListItemText
+                sx={{ mt: 0 }}
                 primary={
-                  <strong
-                    style={{
-                      color: "rgb(225, 225, 225)",
-                      textTransform: "capitalize",
-                      fontSize: "13px",
+                  <Link
+                    href={`/${c.user_id}`}
+                    sx={{
+                      color: "rgb(240, 240, 240)",
+                      display: "inline-block",
                     }}
                   >
-                    {c?.profile.username}
-                  </strong>
+                    <span style={{ fontSize: "14px" }}>
+                      {c?.profile.username}
+                    </span>
+                  </Link>
                 }
                 secondary={
-                  <>
+                  <span style={{ marginTop: "1px", display: "block" }}>
                     <Typography
+                      variant="caption"
                       component="span"
-                      color={"rgb(215, 215, 215)"}
-                      sx={{ fontSize: "14px" }}
+                      sx={{ color: "rgb(230, 230, 230)", display: "block" }}
                     >
                       {c?.message}
                     </Typography>
-                    <br />
-                    <span style={{ fontSize: "10px" }}>
+                    <span
+                      style={{
+                        fontSize: "10px",
+                        marginTop: "-1px",
+                        display: "block",
+                      }}
+                    >
                       {formatTimeAgo(new Date(c?.posted_on))}
                     </span>
-                  </>
+                  </span>
                 }
               />
             </ListItem>
@@ -252,7 +266,7 @@ export const CommentDialogBody = ({ post }) => {
   );
 };
 
-export const CommentDialogActions = ({ post, onCommentSuccess }) => {
+export const CommentDialogActions = ({ post, onCommentSuccess, sx }) => {
   const [comment, setComment] = useState("");
   const [auth] = useAuth();
 
@@ -279,6 +293,7 @@ export const CommentDialogActions = ({ post, onCommentSuccess }) => {
         }
       );
       onCommentSuccess(post.$id, doc);
+      setComment("");
       await functions.createExecution(
         process.env.REACT_APP_GENERATE_NOTIFICATION_FUNC,
         JSON.stringify({
@@ -296,11 +311,14 @@ export const CommentDialogActions = ({ post, onCommentSuccess }) => {
         toast("Something went wrong", { type: "error" });
       }
     }
-    setComment("");
   };
 
   return (
-    <Stack direction="row" alignItems="flex-start" sx={{ width: "100%", p: 2 }}>
+    <Stack
+      direction="row"
+      alignItems="flex-start"
+      sx={{ width: "100%", p: 2, ...sx }}
+    >
       <Avatar
         sx={{ marginRight: "10px" }}
         src={auth.user.profile.profile_image.href}
@@ -328,6 +346,7 @@ export const CommentDialogActions = ({ post, onCommentSuccess }) => {
               </InputAdornment>
             ),
           }}
+          rows={2}
           multiline
           fullWidth
         />
