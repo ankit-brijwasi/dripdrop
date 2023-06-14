@@ -2,6 +2,7 @@ import axios from "axios";
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "react-toastify";
+import { isEmpty } from "lodash";
 
 import Avatar from "@mui/material/Avatar";
 import Box from "@mui/material/Box";
@@ -21,6 +22,7 @@ import PhotoCameraIcon from "@mui/icons-material/PhotoCamera";
 
 import { useAuth } from "../hooks/useAuth";
 import { useDialog } from "../hooks/useDialog";
+import { useRealtime } from "../hooks/useRealtime";
 import useScrollLoader from "../hooks/useScrollbar";
 
 import Loading from "../components/Loading";
@@ -130,6 +132,7 @@ export default function Home() {
   const [auth] = useAuth();
   const { addComment } = useComment();
   const { openDialog, closeDialog } = useDialog();
+  const { post } = useRealtime();
 
   useEffect(() => {
     (async () => {
@@ -141,6 +144,32 @@ export default function Home() {
       setLoading(false);
     })();
   }, []);
+
+  // handle async posts
+  useEffect(() => {
+    if (!isEmpty(post)) {
+      (async () => {
+        const profile = await getProfileFromUserId(post.user_id);
+        setPosts((prevState) => {
+          if (prevState.find((prevPost) => prevPost.$id === post.$id))
+            return prevState;
+          return [
+            {
+              ...post,
+              profile,
+              files: post.file_ids.map((file_id) => ({
+                id: file_id,
+                file: processPostFile(file_id),
+              })),
+              liked_by: post.liked_by.filter(Boolean),
+              comments: post.comments.filter(Boolean),
+            },
+            ...prevState,
+          ];
+        });
+      })();
+    }
+  }, [post, auth?.user?.$id]);
 
   useEffect(() => {
     (async () => {
@@ -154,7 +183,6 @@ export default function Home() {
   }, []);
 
   useScrollLoader(() => {
-    console.log(1);
     setFetching(1);
     offset += 10;
 
