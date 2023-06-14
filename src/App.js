@@ -32,7 +32,6 @@ import Signup from "./pages/Signup";
 // css
 import "./index.css";
 
-
 // App component: Contains all the routes
 function App() {
   const theme = createTheme({
@@ -44,9 +43,9 @@ function App() {
 
   return (
     <ThemeProvider theme={theme}>
+      <CssBaseline />
       <AuthProvider>
         <NewChatProvider>
-          <CssBaseline />
           <Router>
             <FollowProvider>
               <CommentProvider>

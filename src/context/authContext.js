@@ -1,9 +1,12 @@
 // react and material ui
 import { createContext, useEffect, useReducer } from "react";
 
+import Box from "@mui/material/Box";
+
 // custom modules
 import { account } from "../appwrite/config";
 import { getProfileFromUserId } from "../utils/helpers";
+import Loading from "../components/Loading";
 
 export const AuthContext = createContext();
 
@@ -90,7 +93,13 @@ export function AuthProvider({ children }) {
 
   return (
     <AuthContext.Provider value={[state, dispatch]}>
-      {state.loading ? "loading.." : children}
+      {state.loading ? (
+        <Box sx={{ height: "100vh" }}>
+          <Loading style={{ minHeight: "100%" }} message={"Loading DripDrop..."} />
+        </Box>
+      ) : (
+        children
+      )}
     </AuthContext.Provider>
   );
 }
