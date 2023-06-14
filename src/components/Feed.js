@@ -143,7 +143,7 @@ export default function Feed(props) {
           sx={{ objectFit: "cover" }}
         />
       )}
-      <CardActions sx={{ mb: 1 }}>
+      <CardActions sx={{ mb: 1, mt: 1 }}>
         <div
           style={{
             display: "flex",
