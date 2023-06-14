@@ -126,7 +126,9 @@ export async function processRawMessage(msg) {
     ...msg,
     sent_by: await getProfileFromUserId(msg.room_id.split(".")[0]),
     sent_on: new Date(msg.sent_on),
-    attached_files: await Promise.all(msg.attached_files.map(processChatAttachments)),
+    attached_files: await Promise.all(
+      msg.attached_files.map(processChatAttachments)
+    ),
   };
 }
 
@@ -330,3 +332,13 @@ export function searchAndArrangeArray(arr, keyword, property) {
 
   return sortedArr;
 }
+
+export const isUserNameTaken = async (username) => {
+  const docs = await databases.listDocuments(
+    process.env.REACT_APP_DATABASE_ID,
+    process.env.REACT_APP_PROFILE_COLLECTION_ID,
+    [Query.equal("username", username)]
+  );
+  if (docs.total !== 0) return true;
+  return false;
+};

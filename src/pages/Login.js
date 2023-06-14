@@ -20,7 +20,7 @@ import Link from "../components/Link";
 import { getProfileFromUserId } from "../utils/helpers";
 
 function Login(params) {
-  const [email, setEmail] = useState("user1@dripdrop.com");
+  const [email, setEmail] = useState("jhon.doe@dripdrop.com");
   const [password, setPassword] = useState("TestUser123");
   const [loading, setLoading] = useState(false);
 
@@ -77,7 +77,6 @@ function Login(params) {
           />
           <br />
           <br />
-          <br />
           <TextField
             label="Password"
             type="password"
@@ -90,13 +89,6 @@ function Login(params) {
             fullWidth
           />
           <br />
-          <br />
-          <Link
-            href="/accounts/signup/"
-            sx={{ textAlign: "right", display: "block" }}
-          >
-            Forgot Password?
-          </Link>
           <br />
           <Button
             disabled={loading}

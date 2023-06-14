@@ -1,4 +1,3 @@
-import { Query } from "appwrite";
 import { forwardRef, useRef, useState } from "react";
 import { toast } from "react-toastify";
 
@@ -30,6 +29,7 @@ import { account, databases } from "../appwrite/config";
 import authImg from "../assets/auth.svg";
 import basicInfo from "../assets/basic-info.svg";
 import { useDialog } from "../hooks/useDialog";
+import { isUserNameTaken } from "../utils/helpers";
 
 const handleMouseDownPassword = (event) => {
   event.preventDefault();
@@ -289,16 +289,6 @@ export default function Setting() {
   };
 
   const updateUserNamePopup = (event) => {
-    const isUserNameTaken = async (username) => {
-      const docs = await databases.listDocuments(
-        process.env.REACT_APP_DATABASE_ID,
-        process.env.REACT_APP_PROFILE_COLLECTION_ID,
-        [Query.equal("username", username)]
-      );
-      if (docs.total !== 0) return true;
-      return false;
-    };
-
     const handleSubmit = async () => {
       try {
         if (await isUserNameTaken(userNameElRef.current.value))

@@ -61,11 +61,16 @@ async function fetchPosts(limit, offset) {
     );
     return { docs, total: response.data.total };
   } catch (error) {
-    if (!error?.response?.text) {
+    if (!error?.response?.message) {
       toast(error?.message, { type: "error" });
       console.log(error);
+      return [];
     }
-    toast(error?.response?.text, { type: "error" });
+    if (error.response.code === 401) {
+      toast("You'll need to login first", { type: "warning" });
+      return [];
+    }
+    toast(error?.response?.message, { type: "error" });
     return [];
   }
 }
@@ -90,11 +95,16 @@ async function fetchSuggestedAccounts() {
     );
     return { docs, total: response.data.total };
   } catch (error) {
-    if (!error?.response?.text) {
-      toast(error?.message, { type: "error" });
+    if (!error?.response?.message) {
       console.log(error);
+      toast(error?.message, { type: "error" });
+      return [];
     }
-    toast(error?.response?.text, { type: "error" });
+    if (error.response.code === 401) {
+      toast("You'll need to login first", { type: "warning" });
+      return [];
+    }
+    toast(error?.response?.message, { type: "error" });
     return [];
   }
 }

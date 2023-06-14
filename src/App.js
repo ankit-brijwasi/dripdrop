@@ -27,9 +27,11 @@ import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Profile from "./pages/Profile";
 import Setting from "./pages/Setting";
+import Signup from "./pages/Signup";
 
 // css
 import "./index.css";
+
 
 // App component: Contains all the routes
 function App() {
@@ -41,9 +43,9 @@ function App() {
   });
 
   return (
-    <AuthProvider>
-      <NewChatProvider>
-        <ThemeProvider theme={theme}>
+    <ThemeProvider theme={theme}>
+      <AuthProvider>
+        <NewChatProvider>
           <CssBaseline />
           <Router>
             <FollowProvider>
@@ -64,6 +66,7 @@ function App() {
                       <Route path="/:userId" element={<Profile />} />
                     </Route>
                     <Route path="/accounts/signin" element={<Login />} />
+                    <Route path="/accounts/signup" element={<Signup />} />
                     {/* <Route path="*" element={<NotFound />} /> */}
                   </Routes>
                 </DialogProvider>
@@ -71,9 +74,9 @@ function App() {
             </FollowProvider>
           </Router>
           <ToastContainer />
-        </ThemeProvider>
-      </NewChatProvider>
-    </AuthProvider>
+        </NewChatProvider>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }
 
