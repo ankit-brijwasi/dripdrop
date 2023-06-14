@@ -37,6 +37,14 @@ function ChatsContainer({ chats }) {
     });
   }, [chats]);
 
+  const attachmentStyle = {
+    width: "300px",
+    height: "250px",
+    objectFit: "cover",
+    display: "block",
+    marginRight: "auto",
+  };
+
   return (
     <Box
       sx={{
@@ -75,14 +83,51 @@ function ChatsContainer({ chats }) {
                 }
                 secondary={
                   <>
-                    <Typography
-                      component="span"
-                      variant="body1"
-                      color={"rgb(215, 215, 215)"}
-                    >
-                      {chat.body}
-                    </Typography>
-                    <br />
+                    {chat.body && (
+                      <>
+                        <Typography
+                          component="span"
+                          variant="body1"
+                          color={"rgb(215, 215, 215)"}
+                        >
+                          {chat.body}
+                        </Typography>
+                        <br />
+                      </>
+                    )}
+                    {chat.attached_files.length > 0 && (
+                      <>
+                        {chat.attached_files.map((file, i) => (
+                          <Fragment key={i}>
+                            {file.metadata.mimeType.includes("image") && (
+                              <img
+                                src={file.file.href}
+                                alt="attached file"
+                                style={attachmentStyle}
+                              />
+                            )}
+                            {file.metadata.mimeType.includes("video") && (
+                              <video
+                                preload="none"
+                                style={attachmentStyle}
+                                controls
+                              >
+                                <source src={file.file.href} />
+                              </video>
+                            )}
+                            {file.metadata.mimeType.includes("audio") && (
+                              <audio
+                                preload="none"
+                                controls
+                                style={{ display: "block" }}
+                              >
+                                <source src={file.file.href} />
+                              </audio>
+                            )}
+                          </Fragment>
+                        ))}
+                      </>
+                    )}
                     <span style={{ fontSize: "10px" }}>
                       <FormattedDate date={chat.sent_on} />
                     </span>

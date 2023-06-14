@@ -22,6 +22,27 @@ export const processPostFile = (fileId) => {
   }
 };
 
+export const getPreviewChatAttachments = (fileId) => {
+  try {
+    return new URL(fileId);
+  } catch (_) {
+    return storage.getFilePreview(
+      process.env.REACT_APP_CHAT_DATA_BUCKET,
+      fileId,
+      100,
+      100
+    );
+  }
+};
+
+export const getChatAttachments = (fileId) => {
+  try {
+    return new URL(fileId);
+  } catch (_) {
+    return storage.getFileView(process.env.REACT_APP_CHAT_DATA_BUCKET, fileId);
+  }
+};
+
 export const getPostFilePreview = (fileId, x = 40, y = 40) => {
   try {
     return new URL(fileId);
@@ -41,6 +62,16 @@ export const processProfile = (profile) => {
     profile_image: processProfileImg(profile.profile_image),
     followers: profile.followers.filter(Boolean),
     following: profile.following.filter(Boolean),
+  };
+};
+
+export const processChatAttachments = async (attachment) => {
+  return {
+    file: getChatAttachments(attachment),
+    metadata: await storage.getFile(
+      process.env.REACT_APP_CHAT_DATA_BUCKET,
+      attachment
+    ),
   };
 };
 
@@ -95,6 +126,7 @@ export async function processRawMessage(msg) {
     ...msg,
     sent_by: await getProfileFromUserId(msg.room_id.split(".")[0]),
     sent_on: new Date(msg.sent_on),
+    attached_files: await Promise.all(msg.attached_files.map(processChatAttachments)),
   };
 }
 
@@ -118,6 +150,7 @@ export async function saveMsgToCollection(data) {
       room_id: data.roomId,
       body: data.body,
       sent_on: data.sent_on.toISOString().replace("Z", "+00:00"),
+      attached_files: data.attached_files,
     }
   );
   return await processRawMessage(msg);

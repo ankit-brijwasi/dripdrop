@@ -48,17 +48,22 @@ export default function Chat() {
 
   useEffect(() => {
     if (message?.sent_to?.user_id === auth?.user?.$id) {
-      setChats((prevState) => [...prevState, message]);
+      if (message?.sent_by?.user_id === userId) {
+        setChats((prevState) => [...prevState, message]);
+      }
     }
-  }, [message, auth]);
+  }, [message, auth, userId]);
 
-  const handleMsg = async (msg) => {
+  const handleMsg = async (msg, files) => {
     try {
       await createOrupdateContact(userId, auth.user.$id);
+
+      console.log(files);
       const payload = await saveMsgToCollection({
         roomId: `${auth.user.$id}.${userId}`,
         body: msg,
         sent_on: new Date(),
+        attached_files: files,
       });
       setChats((prevState) => [...prevState, payload]);
     } catch (error) {
