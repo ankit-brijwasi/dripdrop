@@ -1,5 +1,5 @@
 // react modules
-import { useEffect, useRef, Fragment } from "react";
+import { useEffect, useRef, Fragment, useState } from "react";
 
 // material ui components
 import Avatar from "@mui/material/Avatar";
@@ -10,6 +10,21 @@ import ListItem from "@mui/material/ListItem";
 import ListItemAvatar from "@mui/material/ListItemAvatar";
 import ListItemText from "@mui/material/ListItemText";
 import Typography from "@mui/material/Typography";
+import { formatTimeAgo } from "../../utils/helpers";
+
+const FormattedDate = ({ date }) => {
+  const [currentTime, setCurrentTime] = useState(formatTimeAgo(date));
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentTime(formatTimeAgo(date));
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [date]);
+
+  return currentTime;
+};
 
 // ChatsContainer: All the chats are displayed here
 function ChatsContainer({ chats }) {
@@ -25,8 +40,8 @@ function ChatsContainer({ chats }) {
   return (
     <Box
       sx={{
-        marginTop: "-18px",
-        height: "calc(94vh - 55px)",
+        marginTop: "18px",
+        height: "calc(94vh - 70px)",
         overflowY: "auto",
       }}
       ref={elRef}
@@ -69,7 +84,7 @@ function ChatsContainer({ chats }) {
                     </Typography>
                     <br />
                     <span style={{ fontSize: "10px" }}>
-                      {chat.sent_on.toString()}
+                      <FormattedDate date={chat.sent_on} />
                     </span>
                   </>
                 }
