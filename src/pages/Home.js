@@ -35,6 +35,7 @@ import {
 } from "../utils/helpers";
 import { processProfileImg } from "../utils/helpers";
 import useComment from "../hooks/useComment";
+import Empty from "../components/Empty";
 
 async function fetchPosts(limit, offset) {
   try {
@@ -144,14 +145,16 @@ export default function Home() {
   useEffect(() => {
     (async () => {
       const { docs, total } = await fetchSuggestedAccounts();
-      if (docs && total) {
+      if (docs && total > 0) {
         setSuggestedAccounts({ loading: false, accounts: docs.splice(0, 5) });
+      } else {
+        setSuggestedAccounts({ loading: false, accounts: [] });
       }
-      setLoading(false);
     })();
   }, []);
 
   useScrollLoader(() => {
+    console.log(1);
     setFetching(1);
     offset += 10;
 
@@ -239,6 +242,8 @@ export default function Home() {
         <Grid item xs={12} sm={8}>
           {loading ? (
             <Loading />
+          ) : posts.length === 0 ? (
+            <Empty style={{ minHeight: "90vh" }} />
           ) : (
             <>
               {posts.map((post) => (
@@ -358,6 +363,10 @@ export default function Home() {
             >
               Suggested accounts
             </Typography>
+            {!suggestedAccounts.loading &&
+              suggestedAccounts.accounts.length === 0 && (
+                <Empty style={{ minHeight: "45vh" }} />
+              )}
             {suggestedAccounts.loading ? (
               <Loading style={{ minHeight: "40vh" }} />
             ) : (

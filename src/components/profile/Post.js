@@ -113,7 +113,7 @@ export default function Post({ fetchQuery }) {
   }, [openedPost, openDialog, handleClose]);
 
   return loading ? (
-    <Loading style={{ minHeight: "65vh" }} />
+    <Loading style={{ minHeight: "60vh" }} />
   ) : (
     <>
       {posts.length === 0 ? (

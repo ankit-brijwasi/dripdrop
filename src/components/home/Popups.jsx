@@ -179,6 +179,7 @@ export const CommentDialogBody = ({ post, sx }) => {
             )
           );
         }
+        setLoading(false);
       } catch (error) {
         if (error?.response?.text)
           toast(error?.response?.text, { type: "error" });
@@ -188,7 +189,6 @@ export const CommentDialogBody = ({ post, sx }) => {
         }
       }
     })();
-    setLoading(false);
   }, [post]);
 
   return (
@@ -268,10 +268,12 @@ export const CommentDialogBody = ({ post, sx }) => {
 
 export const CommentDialogActions = ({ post, onCommentSuccess, sx }) => {
   const [comment, setComment] = useState("");
+  const [saving, setSaving] = useState(false);
   const [auth] = useAuth();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setSaving(true);
     try {
       const doc = await databases.createDocument(
         process.env.REACT_APP_DATABASE_ID,
@@ -303,6 +305,8 @@ export const CommentDialogActions = ({ post, onCommentSuccess, sx }) => {
           post_id: post.$id,
         })
       );
+      setSaving(false);
+      toast("Comment added", { type: "info" });
     } catch (error) {
       if (error?.response?.text)
         toast(error?.response?.text, { type: "error" });
@@ -310,6 +314,7 @@ export const CommentDialogActions = ({ post, onCommentSuccess, sx }) => {
         console.log(error);
         toast("Something went wrong", { type: "error" });
       }
+      setSaving(false);
     }
   };
 
@@ -338,7 +343,7 @@ export const CommentDialogActions = ({ post, onCommentSuccess, sx }) => {
                   type="submit"
                   color="primary"
                   aria-label="send message"
-                  disabled={comment.length === 0}
+                  disabled={comment.length === 0 || saving}
                   size="small"
                 >
                   <SendIcon fontSize="small" />

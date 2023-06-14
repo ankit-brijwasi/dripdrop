@@ -3,7 +3,7 @@ import { Client, Account, Databases, Storage, Functions } from "appwrite";
 const client = new Client();
 
 client
-  .setEndpoint("http://localhost:8000/v1")
+  .setEndpoint(process.env.REACT_APP_APPWRITE_SERVER)
   .setProject(process.env.REACT_APP_PROJECT_ID);
 
 export const account = new Account(client);
