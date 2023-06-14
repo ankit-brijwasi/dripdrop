@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { Link as RouterLink } from "react-router-dom";
 
 import Avatar from "@mui/material/Avatar";
 import Box from "@mui/material/Box";
@@ -10,6 +11,11 @@ import CardContent from "@mui/material/CardContent";
 import CardActions from "@mui/material/CardActions";
 import Divider from "@mui/material/Divider";
 import IconButton from "@mui/material/IconButton";
+import List from "@mui/material/List";
+import ListItemAvatar from "@mui/material/ListItemAvatar";
+import ListItemButton from "@mui/material/ListItemButton";
+import ListItemText from "@mui/material/ListItemText";
+import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 
 import BookmarkIcon from "@mui/icons-material/Bookmark";
@@ -18,11 +24,114 @@ import CommentIcon from "@mui/icons-material/ModeCommentOutlined";
 import ThumbUpIcon from "@mui/icons-material/ThumbUp";
 import ThumbUpOutlinedIcon from "@mui/icons-material/ThumbUpOutlined";
 
+import CloseIcon from "@mui/icons-material/Close";
+
 import { databases } from "../appwrite/config";
-import { useAuth } from "../hooks/useAuth";
-import { formatTimeAgo, likePost, unlikePost } from "../utils/helpers";
+import { useDialog } from "../hooks/useDialog";
+
 import { RenderCarousel } from "./Carousel";
 import Link from "./Link";
+
+import { useAuth } from "../hooks/useAuth";
+import {
+  formatTimeAgo,
+  getProfileFromUserId,
+  likePost,
+  unlikePost,
+} from "../utils/helpers";
+import { toast } from "react-toastify";
+import Loading from "./Loading";
+
+export const DialogHeader = ({ title }) => {
+  const { closeDialog } = useDialog();
+
+  return (
+    <>
+      <Stack
+        direction={"row"}
+        alignItems={"center"}
+        justifyContent={"space-between"}
+        sx={{ py: 1, px: 1 }}
+      >
+        <Typography variant="h6" width={"100%"} textAlign={"center"}>
+          {title}
+        </Typography>
+        <IconButton onClick={(e) => closeDialog()}>
+          <CloseIcon />
+        </IconButton>
+      </Stack>
+      <Divider />
+    </>
+  );
+};
+
+export const DialogBody = ({ postId }) => {
+  const [loading, setLoading] = useState(true);
+  const [likedBy, setLikedBy] = useState([]);
+  const { closeDialog } = useDialog([]);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const post = await databases.getDocument(
+          process.env.REACT_APP_DATABASE_ID,
+          process.env.REACT_APP_POST_COLLECTION_ID,
+          postId
+        );
+
+        post.profiles = await Promise.all(
+          post.liked_by.map(
+            async (user_id) => await getProfileFromUserId(user_id)
+          )
+        );
+        setLikedBy(post.profiles);
+      } catch (error) {
+        if (error?.response?.text) {
+          toast(error?.response?.text, { type: "error" });
+          return;
+        }
+
+        console.log(error);
+        toast("Unable to contact the server", { type: "error" });
+        return;
+      }
+    })();
+    setLoading(false);
+  }, [postId]);
+
+  return (
+    <List sx={{ height: "400px", overflowY: "scroll", marginTop: -1 }} dense>
+      {loading ? (
+        <Loading style={{ minHeight: "100%" }} />
+      ) : (
+        likedBy.map((profile) => (
+          <div key={profile.$id}>
+            <ListItemButton
+              component={RouterLink}
+              onClick={() => closeDialog()}
+              to={"/" + profile.user_id}
+            >
+              <ListItemAvatar sx={{ marginRight: -0.5 }}>
+                <Avatar
+                  alt={profile.username}
+                  sx={{
+                    width: 35,
+                    height: 35,
+                    objectFit: "contain",
+                    border: "1px solid #555",
+                  }}
+                  src={profile.profile_image.href}
+                />
+              </ListItemAvatar>
+              <ListItemText primary={profile.username} />
+            </ListItemButton>
+            <Divider />
+          </div>
+        ))
+      )}
+    </List>
+  );
+};
 
 export default function Feed(props) {
   const [post, setPost] = useState(props.post);
@@ -32,6 +141,8 @@ export default function Feed(props) {
     [props.post.posted_on]
   );
   const [currentTime, setCurrentTime] = useState(formatTimeAgo(dateTime));
+
+  const { openDialog } = useDialog();
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -86,6 +197,25 @@ export default function Feed(props) {
       post?.$id,
       {
         saved_by: post.saved_by.filter((user) => user !== auth?.user?.$id),
+      }
+    );
+  };
+
+  const showLikedBy = (postId) => {
+    openDialog(
+      {
+        children: <DialogBody postId={postId} />,
+        props: { sx: { p: 0 } },
+      },
+      {
+        dialogProps: {
+          fullWidth: true,
+          maxWidth: "xs",
+        },
+        dialogHeader: {
+          children: <DialogHeader title={"Liked by"} />,
+          props: { sx: { p: 0 } },
+        },
       }
     );
   };
@@ -152,18 +282,27 @@ export default function Feed(props) {
           }}
         >
           <Box sx={{ mx: 1.1, display: "flex", alignItems: "center" }}>
-            <Avatar sx={{ bgcolor: "#358ade", width: 20, height: 20 }}>
-              <ThumbUpIcon style={{ color: "#fff", fontSize: "12px" }} />
-            </Avatar>
-            <span
-              style={{
-                marginLeft: "4px",
-                fontSize: "13px",
-                color: "rgb(180, 180, 180)",
+            <Box
+              sx={{
+                ":hover": { textDecoration: "underline" },
+                display: "flex",
+                cursor: "pointer",
               }}
+              onClick={(e) => showLikedBy(post.$id)}
             >
-              {post.liked_by.length}
-            </span>
+              <Avatar sx={{ bgcolor: "#358ade", width: 20, height: 20 }}>
+                <ThumbUpIcon style={{ color: "#fff", fontSize: "12px" }} />
+              </Avatar>
+              <span
+                style={{
+                  marginLeft: "4px",
+                  fontSize: "13px",
+                  color: "rgb(180, 180, 180)",
+                }}
+              >
+                {post.liked_by.length}
+              </span>
+            </Box>
           </Box>
           <Box sx={{ mx: 1.1, display: "flex", alignItems: "center" }}>
             <span
@@ -217,4 +356,3 @@ export default function Feed(props) {
     </Card>
   );
 }
-

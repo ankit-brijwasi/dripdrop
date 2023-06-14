@@ -2,6 +2,9 @@ import { useState } from "react";
 import Avatar from "@mui/material/Avatar";
 import Box from "@mui/material/Box";
 import CardMedia from "@mui/material/CardMedia";
+import Dialog from "@mui/material/Dialog";
+import DialogContent from "@mui/material/DialogContent";
+import DialogTitle from "@mui/material/DialogTitle";
 import Divider from "@mui/material/Divider";
 import Grid from "@mui/material/Grid";
 import IconButton from "@mui/material/IconButton";
@@ -15,10 +18,13 @@ import ThumbUpOutlinedIcon from "@mui/icons-material/ThumbUpOutlined";
 
 import useComment from "../../hooks/useComment";
 import { useAuth } from "../../hooks/useAuth";
+
 import Link from "../Link";
 import { RenderCarousel } from "../Carousel";
+
 import { CommentDialogActions, CommentDialogBody } from "../home/Popups";
 import { formatTimeAgo, likePost, unlikePost } from "../../utils/helpers";
+import { DialogBody, DialogHeader } from "../Feed";
 
 const PostData = ({ post, toggleLike }) => {
   const [auth] = useAuth();
@@ -107,21 +113,54 @@ const PostData = ({ post, toggleLike }) => {
   );
 };
 
-const MetaData = ({ likes, comments }) => {
+const MetaData = ({ likes, postId, comments }) => {
+  const [open, setOpen] = useState(false);
+
   return (
-    <Box
-      sx={{
-        mx: 1.1,
-        my: 1,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-      }}
-    >
-      <div style={{ display: "flex" }}>
-        <Avatar sx={{ bgcolor: "#358ade", width: 20, height: 20 }}>
-          <ThumbUpIcon style={{ color: "#fff", fontSize: "12px" }} />
-        </Avatar>
+    <>
+      <Dialog
+        open={open}
+        onClose={() => setOpen(!open)}
+        maxWidth={"xs"}
+        fullWidth
+      >
+        <DialogTitle sx={{ p: 0 }}>
+          <DialogHeader title={"Liked by"} />
+        </DialogTitle>
+        <DialogContent sx={{ p: 0 }}>
+          <DialogBody postId={postId} />
+        </DialogContent>
+      </Dialog>
+      <Box
+        sx={{
+          mx: 1.1,
+          my: 1,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+        }}
+      >
+        <Box
+          style={{
+            ":hover": { textDecoration: "underline" },
+            display: "flex",
+            cursor: "pointer",
+          }}
+          onClick={(e) => setOpen(!open)}
+        >
+          <Avatar sx={{ bgcolor: "#358ade", width: 20, height: 20 }}>
+            <ThumbUpIcon style={{ color: "#fff", fontSize: "12px" }} />
+          </Avatar>
+          <span
+            style={{
+              marginLeft: "4px",
+              fontSize: "13px",
+              color: "rgb(180, 180, 180)",
+            }}
+          >
+            {likes}
+          </span>
+        </Box>
         <span
           style={{
             marginLeft: "4px",
@@ -129,19 +168,10 @@ const MetaData = ({ likes, comments }) => {
             color: "rgb(180, 180, 180)",
           }}
         >
-          {likes}
+          {comments} comments
         </span>
-      </div>
-      <span
-        style={{
-          marginLeft: "4px",
-          fontSize: "13px",
-          color: "rgb(180, 180, 180)",
-        }}
-      >
-        {comments} comments
-      </span>
-    </Box>
+      </Box>
+    </>
   );
 };
 
@@ -213,7 +243,11 @@ export default function PostBody({ post }) {
           <PostData post={post} toggleLike={toggleLike} />
           <CommentDialogBody post={post} />
           <Divider />
-          <MetaData likes={likes.length} comments={comments.length} />
+          <MetaData
+            likes={likes.length}
+            postId={post.$id}
+            comments={comments.length}
+          />
           <br />
           <CommentDialogActions
             post={post}
